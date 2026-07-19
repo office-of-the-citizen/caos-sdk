@@ -156,4 +156,187 @@ export class CaosClient {
     const res = await this.http.patch<any>('/api/ops/control/ai', body);
     return res.data;
   }
+
+  // 5. Operational commands
+  async getOpsCommandCatalogue(): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/commands');
+    return res.data;
+  }
+
+  async issueOpsCommand(body: {
+    kind: string;
+    reason?: string;
+    dry_run?: boolean;
+    failure_id?: string;
+    params?: Record<string, unknown>;
+  }): Promise<any> {
+    const res = await this.http.post<any>('/api/ops/control/commands', body, {
+      validateStatus: (s) => s < 500,
+    });
+    if (res.status >= 400 && res.data?.error) {
+      const err = new Error(res.data.error) as Error & { status?: number; data?: unknown };
+      err.status = res.status;
+      err.data = res.data;
+      throw err;
+    }
+    return res.data;
+  }
+
+  async getControlAdmission(): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/admission');
+    return res.data;
+  }
+
+  /**
+   * Operator admit. Prefer FormData in browsers (files field).
+   * dry_run returns JSON; live admit may return NDJSON text for progress.
+   */
+  async admitSources(
+    input: FormData | { reason: string; files: Array<{ filename: string; bytes_base64: string; declared_mime_type?: string | null }> },
+    options?: { dry_run?: boolean }
+  ): Promise<any> {
+    const dry_run = Boolean(options?.dry_run);
+    const res = await this.http.post<any>('/api/ops/control/admission', input, {
+      params: dry_run ? { dry_run: '1' } : undefined,
+      headers: input instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+      validateStatus: (s) => s < 500,
+      // Live admit streams NDJSON; axios buffers the full body as text/json.
+      responseType: dry_run ? 'json' : 'text',
+      transformResponse: dry_run
+        ? undefined
+        : [(data) => data],
+    });
+    if (res.status >= 400) {
+      const payload = typeof res.data === 'string' ? safeJson(res.data) : res.data;
+      const err = new Error(payload?.error || `admit failed (${res.status})`) as Error & {
+        status?: number;
+        data?: unknown;
+      };
+      err.status = res.status;
+      err.data = payload;
+      throw err;
+    }
+    if (dry_run) return res.data;
+    return parseNdjsonAdmit(typeof res.data === 'string' ? res.data : String(res.data ?? ''));
+  }
+
+  // 6. Engine 06 compiler surfaces
+  async getEnginePlans(params?: { method?: string; eligible?: string; limit?: number }): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/engine/plans', { params });
+    return res.data;
+  }
+
+  async getEngineExecutions(params?: { plan?: string; status?: string; limit?: number }): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/engine/executions', { params });
+    return res.data;
+  }
+
+  async getEngineStaleness(params: { since?: string; node?: string }): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/engine/staleness', { params });
+    return res.data;
+  }
+
+  async getEngineReviewQueue(params?: { status?: string; kind?: string; limit?: number }): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/engine/review', { params });
+    return res.data;
+  }
+
+  async resolveEngineReview(id: number, action: 'SUPERSEDE' | 'COEXIST' | 'DISMISS', note?: string): Promise<any> {
+    const res = await this.http.post<any>('/api/ops/control/engine/review', { id, action, note });
+    return res.data;
+  }
+
+  // 7. Ledger wrappers
+  async getLedger(limit = 200): Promise<any> {
+    const res = await this.http.get<any>('/api/engine-02/ledger', { params: { limit } });
+    return res.data;
+  }
+
+  async verifyLedger(): Promise<any> {
+    const res = await this.http.post<any>('/api/engine-02/verify');
+    return res.data;
+  }
+
+  async detectTampering(): Promise<any> {
+    const res = await this.http.post<any>('/api/engine-02/detect-tampering');
+    return res.data;
+  }
+
+  async getLedgerEvent(ledger_id: string): Promise<any> {
+    const res = await this.http.post<any>('/api/engine-02/get-event', { ledger_id });
+    return res.data;
+  }
+
+  async replayLedger(): Promise<any> {
+    const res = await this.http.post<any>('/api/engine-02/replay');
+    return res.data;
+  }
+
+  async recordLedgerEvent(body: {
+    event_name: string;
+    payload?: unknown;
+    object_id?: string;
+    cause?: string;
+  }): Promise<any> {
+    const res = await this.http.post<any>('/api/engine-02/record-event', body);
+    return res.data;
+  }
+
+  // 8. Governed claims / pathway B
+  async getGovernedClaim(claimId: string): Promise<any> {
+    const res = await this.http.get<any>(`/api/v1/governed/claims/${encodeURIComponent(claimId)}`);
+    return res.data;
+  }
+
+  async uploadSource(input: FormData | { filename: string; bytes_base64: string; media_type?: string }): Promise<any> {
+    const res = await this.http.post<any>('/api/v1/sources/upload', input, {
+      headers: input instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+      validateStatus: (s) => s < 500,
+    });
+    if (res.status >= 400) {
+      const err = new Error(res.data?.error || `upload failed (${res.status})`) as Error & {
+        status?: number;
+        data?: unknown;
+      };
+      err.status = res.status;
+      err.data = res.data;
+      throw err;
+    }
+    return res.data;
+  }
+
+  /** Replace session token on an existing client (browser cookie refresh). */
+  withSession(sessionToken: string | undefined): CaosClient {
+    const baseURL = this.http.defaults.baseURL || '';
+    const apiKey = this.http.defaults.headers.common?.['x-ute-api-key'] as string | undefined;
+    return new CaosClient(baseURL, { sessionToken, apiKey });
+  }
+}
+
+function safeJson(text: string): any {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+}
+
+function parseNdjsonAdmit(text: string): any {
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+  let final: any = null;
+  const progress: any[] = [];
+  for (const line of lines) {
+    try {
+      const obj = JSON.parse(line);
+      if (obj?.type === 'final') final = obj.result ?? obj;
+      else if (obj?.type === 'error') {
+        const err = new Error(obj.error || 'admit failed') as Error & { data?: unknown };
+        err.data = obj;
+        throw err;
+      } else progress.push(obj);
+    } catch (e) {
+      if (e instanceof Error && (e as any).data) throw e;
+    }
+  }
+  return final ?? { progress, raw: text };
 }
