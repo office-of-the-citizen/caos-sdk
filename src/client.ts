@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
-import { DecisionItem, AdmissionDecisionOutcome } from './types';
-import { PublicRecord, NavigationIndex } from './contracts';
+import { DecisionItem, AdmissionDecisionOutcome } from './types.js';
+import { PublicRecord, NavigationIndex } from './contracts.js';
 
 export class CaosClient {
   private http: AxiosInstance;

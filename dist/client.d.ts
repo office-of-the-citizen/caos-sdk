@@ -1,5 +1,5 @@
-import { DecisionItem } from './types';
-import { PublicRecord, NavigationIndex } from './contracts';
+import { DecisionItem } from './types.js';
+import { PublicRecord, NavigationIndex } from './contracts.js';
 export declare class CaosClient {
     private http;
     constructor(baseURL: string, options?: {
