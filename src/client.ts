@@ -136,4 +136,24 @@ export class CaosClient {
     const res = await this.http.post<any>('/api/ops/control/admission/sync', { reason, dry_run });
     return res.data;
   }
+
+  async getControlSources(): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/sources');
+    return res.data;
+  }
+
+  async getControlEvents(q?: string, limit?: number): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/events', { params: { q, limit } });
+    return res.data;
+  }
+
+  async getControlAi(view?: string, providerId?: string): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/ai', { params: { view, provider_id: providerId } });
+    return res.data;
+  }
+
+  async updateControlAi(body: any): Promise<any> {
+    const res = await this.http.patch<any>('/api/ops/control/ai', body);
+    return res.data;
+  }
 }
