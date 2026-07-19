@@ -1,5 +1,5 @@
-import { DecisionItem } from './types.js';
-import { PublicRecord, NavigationIndex } from './contracts.js';
+import { DecisionItem } from './types';
+import { PublicRecord, NavigationIndex } from './contracts';
 export declare class CaosClient {
     private http;
     constructor(baseURL: string, options?: {
@@ -49,4 +49,70 @@ export declare class CaosClient {
     getControlGovernanceReviews(): Promise<any>;
     recordGovernanceReviewDecision(object_id: string, decision: 'RETAIN' | 'REPLACE' | 'RETIRE', reason: string): Promise<any>;
     syncSourceLibrary(reason: string, dry_run?: boolean): Promise<any>;
+    getControlSources(): Promise<any>;
+    getControlEvents(q?: string, limit?: number): Promise<any>;
+    getControlAi(view?: string, providerId?: string): Promise<any>;
+    updateControlAi(body: any): Promise<any>;
+    getOpsCommandCatalogue(): Promise<any>;
+    issueOpsCommand(body: {
+        kind: string;
+        reason?: string;
+        dry_run?: boolean;
+        failure_id?: string;
+        params?: Record<string, unknown>;
+    }): Promise<any>;
+    getControlAdmission(): Promise<any>;
+    /**
+     * Operator admit. Prefer FormData in browsers (files field).
+     * dry_run returns JSON; live admit may return NDJSON text for progress.
+     */
+    admitSources(input: FormData | {
+        reason: string;
+        files: Array<{
+            filename: string;
+            bytes_base64: string;
+            declared_mime_type?: string | null;
+        }>;
+    }, options?: {
+        dry_run?: boolean;
+    }): Promise<any>;
+    getEnginePlans(params?: {
+        method?: string;
+        eligible?: string;
+        limit?: number;
+    }): Promise<any>;
+    getEngineExecutions(params?: {
+        plan?: string;
+        status?: string;
+        limit?: number;
+    }): Promise<any>;
+    getEngineStaleness(params: {
+        since?: string;
+        node?: string;
+    }): Promise<any>;
+    getEngineReviewQueue(params?: {
+        status?: string;
+        kind?: string;
+        limit?: number;
+    }): Promise<any>;
+    resolveEngineReview(id: number, action: 'SUPERSEDE' | 'COEXIST' | 'DISMISS', note?: string): Promise<any>;
+    getLedger(limit?: number): Promise<any>;
+    verifyLedger(): Promise<any>;
+    detectTampering(): Promise<any>;
+    getLedgerEvent(ledger_id: string): Promise<any>;
+    replayLedger(): Promise<any>;
+    recordLedgerEvent(body: {
+        event_name: string;
+        payload?: unknown;
+        object_id?: string;
+        cause?: string;
+    }): Promise<any>;
+    getGovernedClaim(claimId: string): Promise<any>;
+    uploadSource(input: FormData | {
+        filename: string;
+        bytes_base64: string;
+        media_type?: string;
+    }): Promise<any>;
+    /** Replace session token on an existing client (browser cookie refresh). */
+    withSession(sessionToken: string | undefined): CaosClient;
 }
