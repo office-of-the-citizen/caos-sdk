@@ -128,3 +128,4 @@ export declare class CaosClient {
     /** Replace session token on an existing client (browser cookie refresh). */
     withSession(sessionToken: string | undefined): CaosClient;
 }
+//# sourceMappingURL=client.d.ts.map

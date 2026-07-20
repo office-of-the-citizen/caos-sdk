@@ -51,3 +51,4 @@ export interface DecisionItem {
     adjudicator_id: string | null;
     note: string | null;
 }
+//# sourceMappingURL=types.d.ts.map

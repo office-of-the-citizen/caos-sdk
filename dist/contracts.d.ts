@@ -1816,3 +1816,4 @@ export type NavigationIndex = z.infer<typeof NavigationIndexSchema>;
 export type BudgetProjection = z.infer<typeof BudgetProjectionSchema>;
 export type ActivityEntry = z.infer<typeof ActivityEntrySchema>;
 export type IdentityFact = z.infer<typeof IdentityFactSchema>;
+//# sourceMappingURL=contracts.d.ts.map

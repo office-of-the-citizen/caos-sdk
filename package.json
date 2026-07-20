@@ -1,6 +1,7 @@
 {
   "name": "@office-of-the-citizen/caos-sdk",
   "version": "0.2.0",
+  "description": "Official SDK for communicating with the Constitutional Artificial Operating System (CAOS)",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,16 +9,21 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.js",
       "default": "./dist/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE",
+    "README.md"
   ],
+  "sideEffects": false,
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "axios": "^1.7.2",
@@ -25,5 +31,33 @@
   },
   "devDependencies": {
     "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "caos",
+    "sdk",
+    "constitutional-ai",
+    "operating-system",
+    "citizen",
+    "nigeria",
+    "governance",
+    "public-records",
+    "api-client"
+  ],
+  "author": "Office of the Citizen",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/office-of-the-citizen/caos-sdk.git"
+  },
+  "homepage": "https://github.com/office-of-the-citizen/caos-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/office-of-the-citizen/caos-sdk/issues"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   }
 }
