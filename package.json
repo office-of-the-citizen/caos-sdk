@@ -47,7 +47,7 @@
     "api-client"
   ],
   "author": "Office of the Citizen",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/office-of-the-citizen/caos-sdk.git"
