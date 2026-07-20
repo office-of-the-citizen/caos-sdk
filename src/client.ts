@@ -1,6 +1,32 @@
 import axios, { AxiosInstance } from 'axios';
-import { DecisionItem, AdmissionDecisionOutcome } from './types.js';
-import { PublicRecord, NavigationIndex } from './contracts.js';
+import { CaosError, DecisionItem, AdmissionDecisionOutcome } from './types.js';
+import { PublicRecord, NavigationIndex, SearchResponse } from './contracts.js';
+
+/**
+ * Normalize any transport failure into a CaosError. Understands both the
+ * public envelope ({ error: { code, message } }) and the ops surfaces'
+ * flat shapes ({ error: string, detail?: string }).
+ */
+function toCaosError(error: unknown): CaosError {
+  if (error instanceof CaosError) return error;
+  const anyErr = error as {
+    message?: string;
+    response?: { status?: number; data?: unknown };
+  };
+  const status = anyErr.response?.status;
+  const data = anyErr.response?.data as
+    | { error?: { code?: string; message?: string } | string; detail?: string }
+    | undefined;
+  const envelope = data && typeof data.error === 'object' ? data.error : null;
+  const flat = data && typeof data.error === 'string' ? data.error : null;
+  return new CaosError({
+    code: envelope?.code ?? (status ? `HTTP_${status}` : 'NETWORK_ERROR'),
+    message: envelope?.message ?? flat ?? anyErr.message ?? 'request failed',
+    detail: data?.detail,
+    status,
+    data,
+  });
+}
 
 export class CaosClient {
   private http: AxiosInstance;
@@ -20,6 +46,10 @@ export class CaosClient {
       headers,
       withCredentials: true,
     });
+    this.http.interceptors.response.use(
+      (r) => r,
+      (error) => Promise.reject(toCaosError(error)),
+    );
   }
 
   // 1. Public records
@@ -33,9 +63,12 @@ export class CaosClient {
     return res.data.data;
   }
 
-  async searchPublicRecords(q: string): Promise<{ query: string; results: any[] }> {
-    const res = await this.http.get<{ data: { query: string; results: any[] } }>('/api/v1/public/search', {
-      params: { q },
+  async searchPublicRecords(
+    q: string,
+    options?: { limit?: number; recordType?: string }
+  ): Promise<SearchResponse> {
+    const res = await this.http.get<{ data: SearchResponse }>('/api/v1/public/search', {
+      params: { q, limit: options?.limit, record_type: options?.recordType },
     });
     return res.data.data;
   }
@@ -142,8 +175,14 @@ export class CaosClient {
     return res.data;
   }
 
-  async getControlEvents(q?: string, limit?: number): Promise<any> {
-    const res = await this.http.get<any>('/api/ops/control/events', { params: { q, limit } });
+  async getControlEvents(options?: {
+    q?: string;
+    limit?: number;
+    offset?: number;
+    event_name?: string;
+    engine?: string;
+  }): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/events', { params: options });
     return res.data;
   }
 
@@ -218,6 +257,68 @@ export class CaosClient {
     }
     if (dry_run) return res.data;
     return parseNdjsonAdmit(typeof res.data === 'string' ? res.data : String(res.data ?? ''));
+  }
+
+  /**
+   * Live operator admit with progressive NDJSON delivery (browser only).
+   * Each parsed line is handed to onLine as it arrives so surfaces can render
+   * per-file stage progress. Uses fetch because axios buffers streams.
+   */
+  async admitSourcesStream(input: FormData, onLine: (line: unknown) => void): Promise<void> {
+    const base = (this.http.defaults.baseURL || '').replace(/\/$/, '');
+    const headers = new Headers();
+    const h = this.http.defaults.headers as Record<string, unknown>;
+    for (const key of ['x-ute-api-key', 'x-caos-session', 'Cookie']) {
+      const value = (h?.[key] ?? (h?.common as Record<string, unknown>)?.[key]) as
+        | string
+        | undefined;
+      if (value && key !== 'Cookie') headers.set(key, value);
+    }
+    const res = await fetch(`${base}/api/ops/control/admission`, {
+      method: 'POST',
+      body: input,
+      headers,
+      credentials: 'include',
+    });
+    if (!res.body) {
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new CaosError({
+          code: `HTTP_${res.status}`,
+          message: (data as { error?: string })?.error || res.statusText,
+          status: res.status,
+          data,
+        });
+      }
+      if (data) onLine(data);
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let newlineAt: number;
+      while ((newlineAt = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, newlineAt).trim();
+        buffer = buffer.slice(newlineAt + 1);
+        if (!line) continue;
+        try {
+          onLine(JSON.parse(line));
+        } catch {
+          /* non-JSON keepalive lines are ignored */
+        }
+      }
+    }
+    if (!res.ok) {
+      throw new CaosError({
+        code: `HTTP_${res.status}`,
+        message: res.statusText || 'admit failed',
+        status: res.status,
+      });
+    }
   }
 
   // 6. Engine 06 compiler surfaces

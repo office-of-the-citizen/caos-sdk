@@ -89,6 +89,8 @@ export declare const VerificationSchema: z.ZodObject<{
 export declare const RecordSectionSchema: z.ZodObject<{
     section_code: z.ZodString;
     question: z.ZodString;
+    /** Registry-governed display label (e.g. "Executive Chairman"). */
+    display_label: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
     layout_slot: z.ZodString;
     projection_form: z.ZodString;
     claim_ref: z.ZodNullable<z.ZodString>;
@@ -171,6 +173,7 @@ export declare const RecordSectionSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     section_code: string;
     question: string;
+    display_label: string | null;
     layout_slot: string;
     projection_form: string;
     claim_ref: string | null;
@@ -233,6 +236,7 @@ export declare const RecordSectionSchema: z.ZodObject<{
         surface_mark: string;
         surface_mark_treatment: string;
     };
+    display_label?: string | null | undefined;
     verification?: z.objectInputType<{
         claim_id: z.ZodOptional<z.ZodString>;
         verification_status: z.ZodOptional<z.ZodString>;
@@ -241,10 +245,37 @@ export declare const RecordSectionSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough"> | null | undefined;
     evidence?: unknown;
 }>;
+/** Registry-governed presentation hints for a context entry. */
+export declare const ContextPresentationSchema: z.ZodObject<{
+    icon: z.ZodString;
+    accent_role: z.ZodString;
+    accent_hex: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    icon: string;
+    accent_role: string;
+    accent_hex: string;
+}, {
+    icon: string;
+    accent_role: string;
+    accent_hex: string;
+}>;
 export declare const ContextEntrySchema: z.ZodObject<{
     provider: z.ZodString;
     label: z.ZodString;
     layout_slot: z.ZodString;
+    presentation: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodObject<{
+        icon: z.ZodString;
+        accent_role: z.ZodString;
+        accent_hex: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        icon: string;
+        accent_role: string;
+        accent_hex: string;
+    }, {
+        icon: string;
+        accent_role: string;
+        accent_hex: string;
+    }>>>>;
     data_origin: z.ZodString;
     person_id: z.ZodNullable<z.ZodString>;
     display_name: z.ZodNullable<z.ZodString>;
@@ -324,6 +355,11 @@ export declare const ContextEntrySchema: z.ZodObject<{
         surface_mark_treatment: string;
     };
     provider: string;
+    presentation: {
+        icon: string;
+        accent_role: string;
+        accent_hex: string;
+    } | null;
     data_origin: string;
     person_id: string | null;
     party: {
@@ -362,6 +398,11 @@ export declare const ContextEntrySchema: z.ZodObject<{
     } | null;
     detail: string | null;
     source_references: string[];
+    presentation?: {
+        icon: string;
+        accent_role: string;
+        accent_hex: string;
+    } | null | undefined;
 }>;
 export declare const CivicJourneyStepSchema: z.ZodObject<{
     step_code: z.ZodString;
@@ -449,6 +490,10 @@ export declare const IdentityFactSchema: z.ZodObject<{
 /** Budget region — projected fiscal claims. Absent until truth is admitted. */
 export declare const BudgetProjectionSchema: z.ZodObject<{
     posture: z.ZodEnum<["APPROVED_LATEST", "KNOWN_LATEST", "MISSING"]>;
+    /** Registry-governed heading ("Latest Approved Budget"). Never app-authored. */
+    posture_label: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+    /** Registry-governed total caption ("Total Approved Budget"). */
+    total_label: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
     fiscal_year: z.ZodNullable<z.ZodString>;
     currency: z.ZodDefault<z.ZodString>;
     total: z.ZodNullable<z.ZodNumber>;
@@ -471,6 +516,8 @@ export declare const BudgetProjectionSchema: z.ZodObject<{
     claim_refs: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 }, "strip", z.ZodTypeAny, {
     posture: "APPROVED_LATEST" | "KNOWN_LATEST" | "MISSING";
+    posture_label: string | null;
+    total_label: string | null;
     fiscal_year: string | null;
     currency: string;
     total: number | null;
@@ -485,6 +532,8 @@ export declare const BudgetProjectionSchema: z.ZodObject<{
     posture: "APPROVED_LATEST" | "KNOWN_LATEST" | "MISSING";
     fiscal_year: string | null;
     total: number | null;
+    posture_label?: string | null | undefined;
+    total_label?: string | null | undefined;
     currency?: string | undefined;
     components?: {
         label: string;
@@ -498,6 +547,20 @@ export declare const BudgetProjectionSchema: z.ZodObject<{
 export declare const ActivityEntrySchema: z.ZodObject<{
     activity_code: z.ZodString;
     category: z.ZodString;
+    /** Registry-governed presentation for the category (icon code + colour role). */
+    presentation: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodObject<{
+        icon: z.ZodString;
+        colour_role: z.ZodString;
+        colour_hex: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        colour_role: string;
+        colour_hex: string;
+        icon: string;
+    }, {
+        colour_role: string;
+        colour_hex: string;
+        icon: string;
+    }>>>>;
     occurred_at: z.ZodString;
     title: z.ZodString;
     summary: z.ZodNullable<z.ZodString>;
@@ -525,6 +588,11 @@ export declare const ActivityEntrySchema: z.ZodObject<{
     }>>>;
     object_ref: z.ZodOptional<z.ZodNullable<z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
+    presentation: {
+        colour_role: string;
+        colour_hex: string;
+        icon: string;
+    } | null;
     title: string;
     activity_code: string;
     category: string;
@@ -552,6 +620,11 @@ export declare const ActivityEntrySchema: z.ZodObject<{
         colour_hex: string;
         surface_mark: string;
         surface_mark_treatment: string;
+    } | null | undefined;
+    presentation?: {
+        colour_role: string;
+        colour_hex: string;
+        icon: string;
     } | null | undefined;
     object_ref?: string | null | undefined;
 }>;
@@ -613,6 +686,8 @@ export declare const PublicRecordSchema: z.ZodObject<{
     sections: z.ZodRecord<z.ZodString, z.ZodObject<{
         section_code: z.ZodString;
         question: z.ZodString;
+        /** Registry-governed display label (e.g. "Executive Chairman"). */
+        display_label: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
         layout_slot: z.ZodString;
         projection_form: z.ZodString;
         claim_ref: z.ZodNullable<z.ZodString>;
@@ -695,6 +770,7 @@ export declare const PublicRecordSchema: z.ZodObject<{
     }, "strip", z.ZodTypeAny, {
         section_code: string;
         question: string;
+        display_label: string | null;
         layout_slot: string;
         projection_form: string;
         claim_ref: string | null;
@@ -757,6 +833,7 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark: string;
             surface_mark_treatment: string;
         };
+        display_label?: string | null | undefined;
         verification?: z.objectInputType<{
             claim_id: z.ZodOptional<z.ZodString>;
             verification_status: z.ZodOptional<z.ZodString>;
@@ -769,6 +846,19 @@ export declare const PublicRecordSchema: z.ZodObject<{
         provider: z.ZodString;
         label: z.ZodString;
         layout_slot: z.ZodString;
+        presentation: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodObject<{
+            icon: z.ZodString;
+            accent_role: z.ZodString;
+            accent_hex: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            icon: string;
+            accent_role: string;
+            accent_hex: string;
+        }, {
+            icon: string;
+            accent_role: string;
+            accent_hex: string;
+        }>>>>;
         data_origin: z.ZodString;
         person_id: z.ZodNullable<z.ZodString>;
         display_name: z.ZodNullable<z.ZodString>;
@@ -848,6 +938,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark_treatment: string;
         };
         provider: string;
+        presentation: {
+            icon: string;
+            accent_role: string;
+            accent_hex: string;
+        } | null;
         data_origin: string;
         person_id: string | null;
         party: {
@@ -886,6 +981,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
         } | null;
         detail: string | null;
         source_references: string[];
+        presentation?: {
+            icon: string;
+            accent_role: string;
+            accent_hex: string;
+        } | null | undefined;
     }>, "many">;
     civic_journey: z.ZodDefault<z.ZodArray<z.ZodObject<{
         step_code: z.ZodString;
@@ -903,6 +1003,19 @@ export declare const PublicRecordSchema: z.ZodObject<{
         body: string;
         source_reference: string;
     }>, "many">>;
+    /** Registry-governed copy for designed absences (MISSING_PORTRAIT…). */
+    placeholders: z.ZodDefault<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        title: z.ZodString;
+        body: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        title: string;
+        body: string;
+    }, {
+        title: string;
+        body: string;
+    }>>>>;
+    /** Registry-governed cross-section display vocabulary. */
+    vocabulary: z.ZodDefault<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>>;
     provenance: z.ZodObject<{
         built_at: z.ZodString;
         build_input_hash: z.ZodString;
@@ -1051,6 +1164,10 @@ export declare const PublicRecordSchema: z.ZodObject<{
     }>>>;
     budget: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         posture: z.ZodEnum<["APPROVED_LATEST", "KNOWN_LATEST", "MISSING"]>;
+        /** Registry-governed heading ("Latest Approved Budget"). Never app-authored. */
+        posture_label: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+        /** Registry-governed total caption ("Total Approved Budget"). */
+        total_label: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
         fiscal_year: z.ZodNullable<z.ZodString>;
         currency: z.ZodDefault<z.ZodString>;
         total: z.ZodNullable<z.ZodNumber>;
@@ -1073,6 +1190,8 @@ export declare const PublicRecordSchema: z.ZodObject<{
         claim_refs: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     }, "strip", z.ZodTypeAny, {
         posture: "APPROVED_LATEST" | "KNOWN_LATEST" | "MISSING";
+        posture_label: string | null;
+        total_label: string | null;
         fiscal_year: string | null;
         currency: string;
         total: number | null;
@@ -1087,6 +1206,8 @@ export declare const PublicRecordSchema: z.ZodObject<{
         posture: "APPROVED_LATEST" | "KNOWN_LATEST" | "MISSING";
         fiscal_year: string | null;
         total: number | null;
+        posture_label?: string | null | undefined;
+        total_label?: string | null | undefined;
         currency?: string | undefined;
         components?: {
             label: string;
@@ -1099,6 +1220,20 @@ export declare const PublicRecordSchema: z.ZodObject<{
     activity: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodObject<{
         activity_code: z.ZodString;
         category: z.ZodString;
+        /** Registry-governed presentation for the category (icon code + colour role). */
+        presentation: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodObject<{
+            icon: z.ZodString;
+            colour_role: z.ZodString;
+            colour_hex: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            colour_role: string;
+            colour_hex: string;
+            icon: string;
+        }, {
+            colour_role: string;
+            colour_hex: string;
+            icon: string;
+        }>>>>;
         occurred_at: z.ZodString;
         title: z.ZodString;
         summary: z.ZodNullable<z.ZodString>;
@@ -1126,6 +1261,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
         }>>>;
         object_ref: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     }, "strip", z.ZodTypeAny, {
+        presentation: {
+            colour_role: string;
+            colour_hex: string;
+            icon: string;
+        } | null;
         title: string;
         activity_code: string;
         category: string;
@@ -1154,6 +1294,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark: string;
             surface_mark_treatment: string;
         } | null | undefined;
+        presentation?: {
+            colour_role: string;
+            colour_hex: string;
+            icon: string;
+        } | null | undefined;
         object_ref?: string | null | undefined;
     }>, "many">>>;
 }, "strip", z.ZodTypeAny, {
@@ -1178,6 +1323,7 @@ export declare const PublicRecordSchema: z.ZodObject<{
     sections: Record<string, {
         section_code: string;
         question: string;
+        display_label: string | null;
         layout_slot: string;
         projection_form: string;
         claim_ref: string | null;
@@ -1232,6 +1378,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark_treatment: string;
         };
         provider: string;
+        presentation: {
+            icon: string;
+            accent_role: string;
+            accent_hex: string;
+        } | null;
         data_origin: string;
         person_id: string | null;
         party: {
@@ -1248,6 +1399,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
         body: string;
         source_reference: string;
     }[];
+    placeholders: Record<string, {
+        title: string;
+        body: string;
+    }>;
+    vocabulary: Record<string, string>;
     provenance: {
         built_at: string;
         build_input_hash: string;
@@ -1282,6 +1438,8 @@ export declare const PublicRecordSchema: z.ZodObject<{
     } | null | undefined;
     budget?: {
         posture: "APPROVED_LATEST" | "KNOWN_LATEST" | "MISSING";
+        posture_label: string | null;
+        total_label: string | null;
         fiscal_year: string | null;
         currency: string;
         total: number | null;
@@ -1294,6 +1452,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
         claim_refs: string[];
     } | null | undefined;
     activity?: {
+        presentation: {
+            colour_role: string;
+            colour_hex: string;
+            icon: string;
+        } | null;
         title: string;
         activity_code: string;
         category: string;
@@ -1357,6 +1520,7 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark: string;
             surface_mark_treatment: string;
         };
+        display_label?: string | null | undefined;
         verification?: z.objectInputType<{
             claim_id: z.ZodOptional<z.ZodString>;
             verification_status: z.ZodOptional<z.ZodString>;
@@ -1394,6 +1558,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
         } | null;
         detail: string | null;
         source_references: string[];
+        presentation?: {
+            icon: string;
+            accent_role: string;
+            accent_hex: string;
+        } | null | undefined;
     }[];
     provenance: {
         built_at: string;
@@ -1407,6 +1576,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
         body: string;
         source_reference: string;
     }[] | undefined;
+    placeholders?: Record<string, {
+        title: string;
+        body: string;
+    }> | undefined;
+    vocabulary?: Record<string, string> | undefined;
     identity?: {
         header?: {
             locator: string | null;
@@ -1437,6 +1611,8 @@ export declare const PublicRecordSchema: z.ZodObject<{
         posture: "APPROVED_LATEST" | "KNOWN_LATEST" | "MISSING";
         fiscal_year: string | null;
         total: number | null;
+        posture_label?: string | null | undefined;
+        total_label?: string | null | undefined;
         currency?: string | undefined;
         components?: {
             label: string;
@@ -1460,6 +1636,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark: string;
             surface_mark_treatment: string;
         } | null | undefined;
+        presentation?: {
+            colour_role: string;
+            colour_hex: string;
+            icon: string;
+        } | null | undefined;
         object_ref?: string | null | undefined;
     }[] | null | undefined;
 }>;
@@ -1469,6 +1650,10 @@ export declare const NavigationIndexSchema: z.ZodObject<{
     groups: z.ZodArray<z.ZodObject<{
         group_object_id: z.ZodString;
         group_name: z.ZodString;
+        /** Stable presentation key: slugified name without the " State" suffix. */
+        group_code: z.ZodOptional<z.ZodString>;
+        /** Display name without the " State" suffix (chips, carousels). */
+        group_short_name: z.ZodOptional<z.ZodString>;
         records: z.ZodArray<z.ZodObject<{
             slug: z.ZodString;
             subject_object_id: z.ZodString;
@@ -1490,6 +1675,8 @@ export declare const NavigationIndexSchema: z.ZodObject<{
             subject_object_id: string;
             slug: string;
         }[];
+        group_code?: string | undefined;
+        group_short_name?: string | undefined;
     }, {
         group_object_id: string;
         group_name: string;
@@ -1498,6 +1685,8 @@ export declare const NavigationIndexSchema: z.ZodObject<{
             subject_object_id: string;
             slug: string;
         }[];
+        group_code?: string | undefined;
+        group_short_name?: string | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     record_type: string;
@@ -1510,6 +1699,8 @@ export declare const NavigationIndexSchema: z.ZodObject<{
             subject_object_id: string;
             slug: string;
         }[];
+        group_code?: string | undefined;
+        group_short_name?: string | undefined;
     }[];
 }, {
     record_type: string;
@@ -1522,8 +1713,100 @@ export declare const NavigationIndexSchema: z.ZodObject<{
             subject_object_id: string;
             slug: string;
         }[];
+        group_code?: string | undefined;
+        group_short_name?: string | undefined;
     }[];
 }>;
+/** Engine 11 search result — references prepared public records only. */
+export declare const SearchResultSchema: z.ZodObject<{
+    record_type: z.ZodString;
+    slug: z.ZodString;
+    subject_object_id: z.ZodString;
+    title: z.ZodString;
+    group_name: z.ZodString;
+    answer_summary: z.ZodNullable<z.ZodString>;
+    badge_code: z.ZodNullable<z.ZodString>;
+    score: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    badge_code: string | null;
+    title: string;
+    record_type: string;
+    subject_object_id: string;
+    slug: string;
+    group_name: string;
+    answer_summary: string | null;
+    score: number;
+}, {
+    badge_code: string | null;
+    title: string;
+    record_type: string;
+    subject_object_id: string;
+    slug: string;
+    group_name: string;
+    answer_summary: string | null;
+    score: number;
+}>;
+export declare const SearchResponseSchema: z.ZodObject<{
+    query: z.ZodString;
+    total: z.ZodOptional<z.ZodNumber>;
+    results: z.ZodArray<z.ZodObject<{
+        record_type: z.ZodString;
+        slug: z.ZodString;
+        subject_object_id: z.ZodString;
+        title: z.ZodString;
+        group_name: z.ZodString;
+        answer_summary: z.ZodNullable<z.ZodString>;
+        badge_code: z.ZodNullable<z.ZodString>;
+        score: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        badge_code: string | null;
+        title: string;
+        record_type: string;
+        subject_object_id: string;
+        slug: string;
+        group_name: string;
+        answer_summary: string | null;
+        score: number;
+    }, {
+        badge_code: string | null;
+        title: string;
+        record_type: string;
+        subject_object_id: string;
+        slug: string;
+        group_name: string;
+        answer_summary: string | null;
+        score: number;
+    }>, "many">;
+}, "strip", z.ZodTypeAny, {
+    query: string;
+    results: {
+        badge_code: string | null;
+        title: string;
+        record_type: string;
+        subject_object_id: string;
+        slug: string;
+        group_name: string;
+        answer_summary: string | null;
+        score: number;
+    }[];
+    total?: number | undefined;
+}, {
+    query: string;
+    results: {
+        badge_code: string | null;
+        title: string;
+        record_type: string;
+        subject_object_id: string;
+        slug: string;
+        group_name: string;
+        answer_summary: string | null;
+        score: number;
+    }[];
+    total?: number | undefined;
+}>;
+export type SearchResult = z.infer<typeof SearchResultSchema>;
+export type SearchResponse = z.infer<typeof SearchResponseSchema>;
+export type ContextPresentation = z.infer<typeof ContextPresentationSchema>;
 export type BadgePresentation = z.infer<typeof BadgePresentationSchema>;
 export type Missingness = z.infer<typeof MissingnessSchema>;
 export type RecordSection = z.infer<typeof RecordSectionSchema>;

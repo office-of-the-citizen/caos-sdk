@@ -1,5 +1,5 @@
 import { DecisionItem } from './types.js';
-import { PublicRecord, NavigationIndex } from './contracts.js';
+import { PublicRecord, NavigationIndex, SearchResponse } from './contracts.js';
 export declare class CaosClient {
     private http;
     constructor(baseURL: string, options?: {
@@ -8,10 +8,10 @@ export declare class CaosClient {
     });
     getPublicRecord(slug: string): Promise<PublicRecord>;
     getPublicNavigation(): Promise<NavigationIndex>;
-    searchPublicRecords(q: string): Promise<{
-        query: string;
-        results: any[];
-    }>;
+    searchPublicRecords(q: string, options?: {
+        limit?: number;
+        recordType?: string;
+    }): Promise<SearchResponse>;
     login(apiKey: string): Promise<{
         session_id: string;
         principal_id: string;
@@ -50,7 +50,13 @@ export declare class CaosClient {
     recordGovernanceReviewDecision(object_id: string, decision: 'RETAIN' | 'REPLACE' | 'RETIRE', reason: string): Promise<any>;
     syncSourceLibrary(reason: string, dry_run?: boolean): Promise<any>;
     getControlSources(): Promise<any>;
-    getControlEvents(q?: string, limit?: number): Promise<any>;
+    getControlEvents(options?: {
+        q?: string;
+        limit?: number;
+        offset?: number;
+        event_name?: string;
+        engine?: string;
+    }): Promise<any>;
     getControlAi(view?: string, providerId?: string): Promise<any>;
     updateControlAi(body: any): Promise<any>;
     getOpsCommandCatalogue(): Promise<any>;
@@ -76,6 +82,12 @@ export declare class CaosClient {
     }, options?: {
         dry_run?: boolean;
     }): Promise<any>;
+    /**
+     * Live operator admit with progressive NDJSON delivery (browser only).
+     * Each parsed line is handed to onLine as it arrives so surfaces can render
+     * per-file stage progress. Uses fetch because axios buffers streams.
+     */
+    admitSourcesStream(input: FormData, onLine: (line: unknown) => void): Promise<void>;
     getEnginePlans(params?: {
         method?: string;
         eligible?: string;

@@ -14,10 +14,16 @@ export interface CaosErrorPayload {
     code: string;
     message: string;
     detail?: string;
+    /** HTTP status when the gateway answered; undefined on network failure. */
+    status?: number;
+    /** Raw response body for callers that need more than the normalized shape. */
+    data?: unknown;
 }
 export declare class CaosError extends Error {
     code: string;
     detail?: string;
+    status?: number;
+    data?: unknown;
     constructor(payload: CaosErrorPayload);
 }
 export type RightCode = 'CLAIM_DRAFT' | 'OBJECT_LINEAGE_RECORD' | 'SOURCE_INGEST' | 'OPERATIONAL_COMMAND_ADMIT_SOURCE' | 'SYNC_SOURCE_LIBRARY';

@@ -17,16 +17,24 @@ export interface CaosErrorPayload {
   code: string;
   message: string;
   detail?: string;
+  /** HTTP status when the gateway answered; undefined on network failure. */
+  status?: number;
+  /** Raw response body for callers that need more than the normalized shape. */
+  data?: unknown;
 }
 
 export class CaosError extends Error {
   public code: string;
   public detail?: string;
+  public status?: number;
+  public data?: unknown;
 
   constructor(payload: CaosErrorPayload) {
     super(payload.message);
     this.code = payload.code;
     this.detail = payload.detail;
+    this.status = payload.status;
+    this.data = payload.data;
     this.name = 'CaosError';
   }
 }

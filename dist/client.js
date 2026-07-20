@@ -1,4 +1,26 @@
 import axios from 'axios';
+import { CaosError } from './types.js';
+/**
+ * Normalize any transport failure into a CaosError. Understands both the
+ * public envelope ({ error: { code, message } }) and the ops surfaces'
+ * flat shapes ({ error: string, detail?: string }).
+ */
+function toCaosError(error) {
+    if (error instanceof CaosError)
+        return error;
+    const anyErr = error;
+    const status = anyErr.response?.status;
+    const data = anyErr.response?.data;
+    const envelope = data && typeof data.error === 'object' ? data.error : null;
+    const flat = data && typeof data.error === 'string' ? data.error : null;
+    return new CaosError({
+        code: envelope?.code ?? (status ? `HTTP_${status}` : 'NETWORK_ERROR'),
+        message: envelope?.message ?? flat ?? anyErr.message ?? 'request failed',
+        detail: data?.detail,
+        status,
+        data,
+    });
+}
 export class CaosClient {
     http;
     constructor(baseURL, options) {
@@ -15,6 +37,7 @@ export class CaosClient {
             headers,
             withCredentials: true,
         });
+        this.http.interceptors.response.use((r) => r, (error) => Promise.reject(toCaosError(error)));
     }
     // 1. Public records
     async getPublicRecord(slug) {
@@ -25,9 +48,9 @@ export class CaosClient {
         const res = await this.http.get('/api/v1/public/navigation/lga');
         return res.data.data;
     }
-    async searchPublicRecords(q) {
+    async searchPublicRecords(q, options) {
         const res = await this.http.get('/api/v1/public/search', {
-            params: { q },
+            params: { q, limit: options?.limit, record_type: options?.recordType },
         });
         return res.data.data;
     }
@@ -104,8 +127,8 @@ export class CaosClient {
         const res = await this.http.get('/api/ops/control/sources');
         return res.data;
     }
-    async getControlEvents(q, limit) {
-        const res = await this.http.get('/api/ops/control/events', { params: { q, limit } });
+    async getControlEvents(options) {
+        const res = await this.http.get('/api/ops/control/events', { params: options });
         return res.data;
     }
     async getControlAi(view, providerId) {
@@ -163,6 +186,70 @@ export class CaosClient {
         if (dry_run)
             return res.data;
         return parseNdjsonAdmit(typeof res.data === 'string' ? res.data : String(res.data ?? ''));
+    }
+    /**
+     * Live operator admit with progressive NDJSON delivery (browser only).
+     * Each parsed line is handed to onLine as it arrives so surfaces can render
+     * per-file stage progress. Uses fetch because axios buffers streams.
+     */
+    async admitSourcesStream(input, onLine) {
+        const base = (this.http.defaults.baseURL || '').replace(/\/$/, '');
+        const headers = new Headers();
+        const h = this.http.defaults.headers;
+        for (const key of ['x-ute-api-key', 'x-caos-session', 'Cookie']) {
+            const value = (h?.[key] ?? h?.common?.[key]);
+            if (value && key !== 'Cookie')
+                headers.set(key, value);
+        }
+        const res = await fetch(`${base}/api/ops/control/admission`, {
+            method: 'POST',
+            body: input,
+            headers,
+            credentials: 'include',
+        });
+        if (!res.body) {
+            const data = await res.json().catch(() => null);
+            if (!res.ok) {
+                throw new CaosError({
+                    code: `HTTP_${res.status}`,
+                    message: data?.error || res.statusText,
+                    status: res.status,
+                    data,
+                });
+            }
+            if (data)
+                onLine(data);
+            return;
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        for (;;) {
+            const { done, value } = await reader.read();
+            if (done)
+                break;
+            buffer += decoder.decode(value, { stream: true });
+            let newlineAt;
+            while ((newlineAt = buffer.indexOf('\n')) >= 0) {
+                const line = buffer.slice(0, newlineAt).trim();
+                buffer = buffer.slice(newlineAt + 1);
+                if (!line)
+                    continue;
+                try {
+                    onLine(JSON.parse(line));
+                }
+                catch {
+                    /* non-JSON keepalive lines are ignored */
+                }
+            }
+        }
+        if (!res.ok) {
+            throw new CaosError({
+                code: `HTTP_${res.status}`,
+                message: res.statusText || 'admit failed',
+                status: res.status,
+            });
+        }
     }
     // 6. Engine 06 compiler surfaces
     async getEnginePlans(params) {

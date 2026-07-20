@@ -50,6 +50,8 @@ export const VerificationSchema = z
 export const RecordSectionSchema = z.object({
   section_code: z.string(),
   question: z.string(),
+  /** Registry-governed display label (e.g. "Executive Chairman"). */
+  display_label: z.string().nullable().optional().default(null),
   layout_slot: z.string(),
   projection_form: z.string(),
   claim_ref: z.string().nullable(),
@@ -62,10 +64,18 @@ export const RecordSectionSchema = z.object({
   evidence: z.unknown().nullable().optional(),
 });
 
+/** Registry-governed presentation hints for a context entry. */
+export const ContextPresentationSchema = z.object({
+  icon: z.string(),
+  accent_role: z.string(),
+  accent_hex: z.string(),
+});
+
 export const ContextEntrySchema = z.object({
   provider: z.string(),
   label: z.string(),
   layout_slot: z.string(),
+  presentation: ContextPresentationSchema.nullable().optional().default(null),
   data_origin: z.string(),
   person_id: z.string().nullable(),
   display_name: z.string().nullable(),
@@ -109,6 +119,10 @@ export const IdentityFactSchema = z.object({
 /** Budget region — projected fiscal claims. Absent until truth is admitted. */
 export const BudgetProjectionSchema = z.object({
   posture: z.enum(["APPROVED_LATEST", "KNOWN_LATEST", "MISSING"]),
+  /** Registry-governed heading ("Latest Approved Budget"). Never app-authored. */
+  posture_label: z.string().nullable().optional().default(null),
+  /** Registry-governed total caption ("Total Approved Budget"). */
+  total_label: z.string().nullable().optional().default(null),
   fiscal_year: z.string().nullable(),
   currency: z.string().default("NGN"),
   total: z.number().nullable(),
@@ -129,6 +143,12 @@ export const BudgetProjectionSchema = z.object({
 export const ActivityEntrySchema = z.object({
   activity_code: z.string(),
   category: z.string(),
+  /** Registry-governed presentation for the category (icon code + colour role). */
+  presentation: z
+    .object({ icon: z.string(), colour_role: z.string(), colour_hex: z.string() })
+    .nullable()
+    .optional()
+    .default(null),
   occurred_at: z.string(),
   title: z.string(),
   summary: z.string().nullable(),
@@ -152,6 +172,13 @@ export const PublicRecordSchema = z.object({
   sections: z.record(RecordSectionSchema),
   context: z.array(ContextEntrySchema),
   civic_journey: z.array(CivicJourneyStepSchema).default([]),
+  /** Registry-governed copy for designed absences (MISSING_PORTRAIT…). */
+  placeholders: z
+    .record(z.object({ title: z.string(), body: z.string() }))
+    .optional()
+    .default({}),
+  /** Registry-governed cross-section display vocabulary. */
+  vocabulary: z.record(z.string()).optional().default({}),
   provenance: z.object({
     built_at: z.string(),
     build_input_hash: z.string(),
@@ -178,6 +205,10 @@ export const NavigationIndexSchema = z.object({
     z.object({
       group_object_id: z.string(),
       group_name: z.string(),
+      /** Stable presentation key: slugified name without the " State" suffix. */
+      group_code: z.string().optional(),
+      /** Display name without the " State" suffix (chips, carousels). */
+      group_short_name: z.string().optional(),
       records: z.array(
         z.object({
           slug: z.string(),
@@ -189,6 +220,27 @@ export const NavigationIndexSchema = z.object({
   ),
 });
 
+/** Engine 11 search result — references prepared public records only. */
+export const SearchResultSchema = z.object({
+  record_type: z.string(),
+  slug: z.string(),
+  subject_object_id: z.string(),
+  title: z.string(),
+  group_name: z.string(),
+  answer_summary: z.string().nullable(),
+  badge_code: z.string().nullable(),
+  score: z.number(),
+});
+
+export const SearchResponseSchema = z.object({
+  query: z.string(),
+  total: z.number().optional(),
+  results: z.array(SearchResultSchema),
+});
+
+export type SearchResult = z.infer<typeof SearchResultSchema>;
+export type SearchResponse = z.infer<typeof SearchResponseSchema>;
+export type ContextPresentation = z.infer<typeof ContextPresentationSchema>;
 export type BadgePresentation = z.infer<typeof BadgePresentationSchema>;
 export type Missingness = z.infer<typeof MissingnessSchema>;
 export type RecordSection = z.infer<typeof RecordSectionSchema>;
