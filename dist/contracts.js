@@ -13,6 +13,13 @@
  * absent-by-default: missing truth is a designed state, never an error.
  */
 import { z } from "zod";
+/**
+ * PROJECTION_VERSION 3 (Engine 10 v3, DEC-2026-07-20-001): context entries
+ * may carry data_origin "RESOLVED_CLAIM" (Occupancy Resolver truth over
+ * published assertions) alongside "REPOSITORY_REFERENCE" identity joins;
+ * badges on resolved entries reflect verification posture, never dressed
+ * above their evidence grade.
+ */
 export const BadgePresentationSchema = z.object({
     badge_code: z.string(),
     label: z.string(),
