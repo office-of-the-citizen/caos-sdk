@@ -1,5 +1,6 @@
 import { DecisionItem } from './types.js';
 import { PublicRecord, NavigationIndex, SearchResponse } from './contracts.js';
+import { type RuntimeIdentity } from './identity.js';
 export declare class CaosClient {
     private http;
     constructor(baseURL: string, options?: {
@@ -50,6 +51,11 @@ export declare class CaosClient {
     recordGovernanceReviewDecision(object_id: string, decision: 'RETAIN' | 'REPLACE' | 'RETIRE', reason: string): Promise<any>;
     syncSourceLibrary(reason: string, dry_run?: boolean): Promise<any>;
     getControlSources(): Promise<any>;
+    getControlKi(params?: {
+        predicate?: string;
+        status?: string;
+        limit?: number;
+    }): Promise<any>;
     getControlEvents(options?: {
         q?: string;
         limit?: number;
@@ -127,5 +133,6 @@ export declare class CaosClient {
     }): Promise<any>;
     /** Replace session token on an existing client (browser cookie refresh). */
     withSession(sessionToken: string | undefined): CaosClient;
+    getRuntimeIdentity(): Promise<RuntimeIdentity>;
 }
 //# sourceMappingURL=client.d.ts.map

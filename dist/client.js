@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { CaosError } from './types.js';
+import { CAOS_SDK_VERSION, CAOS_REQUIRED_GATEWAY, semverSatisfies, } from './identity.js';
 /**
  * Normalize any transport failure into a CaosError. Understands both the
  * public envelope ({ error: { code, message } }) and the ops surfaces'
@@ -125,6 +126,10 @@ export class CaosClient {
     }
     async getControlSources() {
         const res = await this.http.get('/api/ops/control/sources');
+        return res.data;
+    }
+    async getControlKi(params) {
+        const res = await this.http.get('/api/ops/control/ki', { params });
         return res.data;
     }
     async getControlEvents(options) {
@@ -320,6 +325,23 @@ export class CaosClient {
         const baseURL = this.http.defaults.baseURL || '';
         const apiKey = this.http.defaults.headers.common?.['x-ute-api-key'];
         return new CaosClient(baseURL, { sessionToken, apiKey });
+    }
+    async getRuntimeIdentity() {
+        let gatewayVersion = null;
+        try {
+            const res = await this.http.get('/api/version');
+            gatewayVersion = res.data.gateway;
+        }
+        catch {
+            /* Gateway unreachable — gatewayVersion stays null */
+        }
+        return {
+            sdkVersion: CAOS_SDK_VERSION,
+            gatewayVersion,
+            compatible: gatewayVersion
+                ? semverSatisfies(gatewayVersion, CAOS_REQUIRED_GATEWAY)
+                : false,
+        };
     }
 }
 function safeJson(text) {

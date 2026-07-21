@@ -20,7 +20,10 @@
   ],
   "sideEffects": false,
   "scripts": {
+    "generate": "node scripts/generate-runtime-identity.mjs",
+    "prebuild": "npm run generate",
     "build": "tsc",
+    "pretypecheck": "npm run generate",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
     "prepack": "npm run build"

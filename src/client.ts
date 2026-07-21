@@ -1,6 +1,12 @@
 import axios, { AxiosInstance } from 'axios';
 import { CaosError, DecisionItem, AdmissionDecisionOutcome } from './types.js';
 import { PublicRecord, NavigationIndex, SearchResponse } from './contracts.js';
+import {
+  CAOS_SDK_VERSION,
+  CAOS_REQUIRED_GATEWAY,
+  semverSatisfies,
+  type RuntimeIdentity,
+} from './identity.js';
 
 /**
  * Normalize any transport failure into a CaosError. Understands both the
@@ -172,6 +178,15 @@ export class CaosClient {
 
   async getControlSources(): Promise<any> {
     const res = await this.http.get<any>('/api/ops/control/sources');
+    return res.data;
+  }
+
+  async getControlKi(params?: {
+    predicate?: string;
+    status?: string;
+    limit?: number;
+  }): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/ki', { params });
     return res.data;
   }
 
@@ -411,6 +426,24 @@ export class CaosClient {
     const baseURL = this.http.defaults.baseURL || '';
     const apiKey = this.http.defaults.headers.common?.['x-ute-api-key'] as string | undefined;
     return new CaosClient(baseURL, { sessionToken, apiKey });
+  }
+
+  async getRuntimeIdentity(): Promise<RuntimeIdentity> {
+    let gatewayVersion: string | null = null;
+    try {
+      const res = await this.http.get<{ gateway: string }>('/api/version');
+      gatewayVersion = res.data.gateway;
+    } catch {
+      /* Gateway unreachable — gatewayVersion stays null */
+    }
+
+    return {
+      sdkVersion: CAOS_SDK_VERSION,
+      gatewayVersion,
+      compatible: gatewayVersion
+        ? semverSatisfies(gatewayVersion, CAOS_REQUIRED_GATEWAY)
+        : false,
+    };
   }
 }
 

@@ -2,3 +2,5 @@ node_modules
 *.tsbuildinfo
 .DS_Store
 *.tgz
+# Generated runtime identity — recreate with `npm run generate`
+src/generated/runtime-identity.ts

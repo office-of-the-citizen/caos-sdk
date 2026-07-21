@@ -229,9 +229,16 @@ npm publish
 
 ### Versioning
 
+`package.json#version` is the **sole source of truth** for the SDK version.
+A prebuild step generates `src/generated/runtime-identity.ts` from that field.
+Do not hand-edit the generated file.
+
 ```bash
-# Bump version
+# Bump version (updates package.json only)
 npm version patch  # or minor / major
+
+# Build embeds the new version into runtime identity
+npm run build
 
 # Push tags
 git push --follow-tags
@@ -245,10 +252,10 @@ git push --follow-tags
 # Install dependencies
 npm install
 
-# Build
+# Generate runtime identity + build
 npm run build
 
-# Type-check without emitting
+# Type-check (also regenerates identity)
 npm run typecheck
 
 # Verify what would be published
