@@ -47,25 +47,38 @@ NODE_AUTH_TOKEN=ghp_your_token_here npm install @office-of-the-citizen/caos-sdk
 ## Quick Start
 
 ```typescript
-import { CaosClient } from "@office-of-the-citizen/caos-sdk";
+import {
+  CaosClient,
+  getBySlug,
+  breadcrumb,
+  lgaNavigationTree,
+  getPermanentSnapshotMeta,
+} from "@office-of-the-citizen/caos-sdk";
 
+// Permanent geography — distributed Engine 10 snapshot (no network).
+// CAOS owns the data; the SDK only distributes the published projection.
+const lga = getBySlug("lg-la-ikeja");
+const chain = lga ? breadcrumb(lga.canonical_id) : [];
+const tree = lgaNavigationTree();
+const meta = getPermanentSnapshotMeta(); // epoch, commit, content_hash, generated_at
+
+// Live constitutional truth — requires Engine 12 gateway.
 const client = new CaosClient("https://your-caos-instance.com", {
   apiKey: "your-api-key",
 });
-
-// Public records
-const record = await client.getPublicRecord("lagos-ikeja");
-const navigation = await client.getPublicNavigation();
+const record = await client.getPublicRecord("lg-la-ikeja");
 const results = await client.searchPublicRecords("healthcare", { limit: 10 });
 
-// Authentication
+// Authentication / Workroom
 const session = await client.login("your-api-key");
 const me = await client.me();
-
-// Workroom
 const items = await client.listDecisionItems("OPEN");
 await client.resolveDecisionItem(42, "APPROVED", "Reviewed and approved");
 ```
+
+Applications compose their own view models from permanent snapshot + truth.
+The SDK does not ship presentation defaults or compose helpers.
+Population never appears in the permanent snapshot.
 
 ## Authentication
 

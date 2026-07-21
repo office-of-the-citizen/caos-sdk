@@ -1,8 +1,15 @@
 name: Publish SDK to GitHub Packages
 
+# Publishes when package.json version on main is new, on GitHub Release,
+# or via manual dispatch. Notifies citizen + control-room to bump deps.
 on:
   release:
     types: [published]
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,26 +18,74 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      published: ${{ steps.publish.outputs.published }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          registry-url: 'https://npm.pkg.github.com'
+          node-version: "20"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@office-of-the-citizen"
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Build SDK
-        run: npm run build
+      - id: meta
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "SDK version: $VERSION"
 
-      - name: Verify package contents
-        run: npm pack --dry-run
-
-      - name: Publish to GitHub Packages
-        run: npm publish
+      - id: exists
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          if npm view "@office-of-the-citizen/caos-sdk@$VERSION" version \
+            --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        if: steps.exists.outputs.exists == 'false'
+        run: npm run build
+
+      - name: Publish
+        id: publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ steps.exists.outputs.exists }}" = "true" ]; then
+            echo "Version ${{ steps.meta.outputs.version }} already published — skip"
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          npm pack --dry-run
+          npm publish
+          echo "published=true" >> "$GITHUB_OUTPUT"
+
+  notify-consumers:
+    needs: publish
+    if: needs.publish.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo: [citizen, control-room]
+    steps:
+      - name: Dispatch sdk-released → ${{ matrix.repo }}
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CROSS_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          repository: office-of-the-citizen/${{ matrix.repo }}
+          event-type: sdk-released
+          client-payload: |
+            {
+              "package": "@office-of-the-citizen/caos-sdk",
+              "version": "${{ needs.publish.outputs.version }}",
+              "source": "caos-sdk",
+              "sha": "${{ github.sha }}"
+            }

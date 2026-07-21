@@ -68,18 +68,47 @@ The official SDK for communicating with the Constitutional Artificial Operating 
 
 Constitutional responsibilities include:
 
-- API clients
+- API clients (transport)
 - Authentication clients
-- Projection clients
+- Projection / truth clients
 - Operator clients
-- Shared types
+- Shared types and contracts
 - Public interfaces
-- Request models
-- Response models
+- Request / response models
 - Versioned contracts
-- SDK utilities supporting public APIs
+- **Permanent snapshot distribution** — ships the published Engine 10
+  Permanent Snapshot Projection so applications can render permanent
+  geography without a live OS connection
 
 Nothing outside these responsibilities shall be implemented here.
+
+### Permanent snapshot distribution (Founder Amendment 2026-07-21)
+
+Ownership chain (immutable):
+
+```
+CAOS Spatial Repository
+  → Engine 10 Permanent Snapshot Projection
+  → Snapshot Publisher
+  → SDK distribution bundle
+  → Citizen / other apps
+```
+
+- CAOS remains the **sole constitutional owner** and admission authority of
+  permanent spatial objects.
+- The SDK **distributes** an immutable published snapshot. It does **not** own
+  the data.
+- The snapshot is derived, disposable, and rebuildable (Engine 10 projection).
+- Snapshot metadata MUST include: `snapshot_epoch`, `generated_from_commit`,
+  `content_hash`, `generated_at`.
+- Population MUST NEVER appear in the permanent snapshot (constitutional truth).
+- Area is permanent metadata when admitted on the spatial object — not a claim.
+
+The SDK SHALL NOT contain:
+
+- Presentation defaults (labels, icons, colours, typography)
+- Compose helpers / view-model builders for applications
+- Constitutional ownership claims over spatial objects
 
 ---
 
@@ -121,12 +150,12 @@ It is not the client.
 
 ## Repository Responsibilities
 
-### The SDK owns
+### The SDK is responsible for
 
-- HTTP clients
+- HTTP clients / transport
 - API clients
 - Authentication clients
-- Projection clients
+- Projection / truth clients
 - Operator clients
 - Shared request models
 - Shared response models
@@ -134,6 +163,10 @@ It is not the client.
 - Public TypeScript types
 - API version compatibility
 - Developer ergonomics
+- Distributing the published permanent snapshot (read-only query APIs)
+
+The SDK does **not** own permanent spatial objects. It distributes a snapshot
+that CAOS owns and Engine 10 projects.
 
 ---
 
@@ -143,16 +176,19 @@ It is not the client.
 - Engine implementations
 - Runtime services
 - Workers
-- Registries
+- Registries (as constitutional authority)
 - Database access
 - Constitutional logic
 - Verification logic
 - Evidence processing
 - Compilation logic
-- Projection generation
+- Projection **generation** (build stays in CAOS Engine 10)
 - Business workflows
+- Presentation defaults (labels, icons, colours, typography)
+- Application compose helpers / view-model builders
+- Population figures in the permanent snapshot bundle
 
-Those belong inside CAOS.
+Those belong inside CAOS (or applications, for presentation).
 
 ---
 
