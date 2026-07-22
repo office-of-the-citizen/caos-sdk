@@ -2,6 +2,12 @@
 
 Official SDK for communicating with the Constitutional Artificial Operating System (CAOS).
 
+> **Documentation site:** a full, self-contained reference lives in
+> [`docs/index.html`](docs/index.html) — principles, installation, quickstart,
+> the complete API surface, the permanent-snapshot ownership chain, the error
+> model and the compatibility gate, styled as constitutional infrastructure.
+> Open it directly or serve the `docs/` folder statically.
+
 ## Installation
 
 ### From GitHub Packages

@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CAOS SDK — Constitutional infrastructure for the public record</title>
+<meta name="description" content="The official SDK for communicating with the Constitutional Artificial Operating System (CAOS): transport contracts and permanent snapshot distribution." />
+<style>
+  /* ── Constitutional colour language (dark infrastructure theme) ──────
+     GREEN  = affirmed truth        BLUE  = governed reference
+     AMBER  = attention             GREY  = governed absence            */
+  :root {
+    --bg: #070d14;
+    --bg-raised: #0c141e;
+    --bg-panel: #101a26;
+    --line: rgba(148, 163, 184, 0.14);
+    --line-strong: rgba(148, 163, 184, 0.28);
+    --ink: #e6edf3;
+    --ink-soft: #9fb0c0;
+    --ink-faint: #64748b;
+    --green: #22c07a;
+    --green-deep: #0e8a4c;
+    --green-soft: rgba(34, 192, 122, 0.12);
+    --blue: #5b9bf5;
+    --blue-soft: rgba(91, 155, 245, 0.12);
+    --amber: #e8a13c;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: rgba(34, 192, 122, 0.3); }
+
+  a { color: var(--green); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 4px; }
+
+  /* ── Top bar ── */
+  .top {
+    position: fixed; inset: 0 0 auto 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; height: 64px;
+    background: rgba(7, 13, 20, 0.75);
+    backdrop-filter: blur(18px) saturate(160%);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+  .brand:hover { text-decoration: none; }
+  .brand .seal {
+    width: 30px; height: 30px; border-radius: 999px;
+    display: grid; place-items: center;
+    background: var(--green-soft); border: 1px solid rgba(34, 192, 122, 0.4);
+    color: var(--green); font-size: 13px;
+  }
+  .brand small { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; color: var(--ink-faint); text-transform: uppercase; }
+  .top nav { display: flex; gap: 22px; font-size: 13.5px; font-weight: 600; }
+  .top nav a { color: var(--ink-soft); }
+  .top nav a:hover { color: var(--ink); text-decoration: none; }
+  .top .gh {
+    border: 1px solid var(--line-strong); border-radius: 999px;
+    padding: 7px 16px; color: var(--ink); font-size: 13px;
+    transition: border-color 180ms var(--ease-out), background 180ms var(--ease-out);
+  }
+  .top .gh:hover { border-color: var(--green); background: var(--green-soft); text-decoration: none; }
+  @media (max-width: 760px) { .top nav { display: none; } }
+
+  /* ── Hero ── */
+  .hero {
+    position: relative; overflow: hidden;
+    padding: 168px 28px 96px; text-align: center;
+  }
+  .hero::before {
+    content: ""; position: absolute; inset: -40% -20% auto;
+    height: 130%;
+    background:
+      radial-gradient(42% 55% at 30% 30%, rgba(14, 138, 76, 0.22), transparent 70%),
+      radial-gradient(38% 50% at 72% 22%, rgba(91, 155, 245, 0.13), transparent 70%);
+    pointer-events: none;
+  }
+  .hero > * { position: relative; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--green); background: var(--green-soft);
+    border: 1px solid rgba(34, 192, 122, 0.35);
+    padding: 7px 16px; border-radius: 999px;
+  }
+  .hero h1 {
+    margin: 26px auto 0; max-width: 15em;
+    font-size: clamp(2.3rem, 5.4vw, 3.9rem);
+    line-height: 1.06; letter-spacing: -0.03em; font-weight: 800;
+  }
+  .hero h1 em { font-style: normal; color: var(--green); }
+  .hero .sub {
+    margin: 22px auto 0; max-width: 42em;
+    color: var(--ink-soft); font-size: clamp(1rem, 1.6vw, 1.15rem);
+  }
+  .hero .cta { margin-top: 36px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    border-radius: 12px; padding: 13px 24px;
+    font-size: 14.5px; font-weight: 700;
+    transition: transform 120ms var(--ease-out), background 180ms var(--ease-out), border-color 180ms var(--ease-out);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:hover { text-decoration: none; }
+  .btn-primary { background: var(--green-deep); color: #fff; box-shadow: 0 2px 18px rgba(14, 138, 76, 0.35); }
+  .btn-primary:hover { background: #0f9c56; }
+  .btn-ghost { border: 1px solid var(--line-strong); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--green); }
+
+  .hero .install {
+    margin: 46px auto 0; max-width: 560px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--bg-panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 15px 18px;
+    font-family: var(--mono); font-size: 13.5px; color: var(--ink-soft);
+    text-align: left;
+  }
+  .hero .install .p { color: var(--green); }
+
+  /* ── Layout ── */
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 28px; }
+  .grid { display: grid; grid-template-columns: 200px 1fr; gap: 56px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .sidenav { display: none; } }
+
+  .sidenav { position: sticky; top: 96px; align-self: start; font-size: 13.5px; }
+  .sidenav p { font-size: 10.5px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 10px; }
+  .sidenav a {
+    display: block; color: var(--ink-soft); padding: 6px 12px;
+    border-left: 2px solid transparent; border-radius: 0 8px 8px 0;
+    transition: color 150ms var(--ease-out), border-color 150ms var(--ease-out), background 150ms var(--ease-out);
+  }
+  .sidenav a:hover { color: var(--ink); text-decoration: none; }
+  .sidenav a.on { color: var(--green); border-left-color: var(--green); background: var(--green-soft); }
+
+  section { padding: 54px 0; border-top: 1px solid var(--line); }
+  section:first-of-type { border-top: none; }
+  h2 { font-size: 1.7rem; letter-spacing: -0.02em; font-weight: 800; }
+  h2 .k { color: var(--ink-faint); font-family: var(--mono); font-size: 0.95rem; font-weight: 500; margin-right: 10px; }
+  h3 { font-size: 1.06rem; font-weight: 700; letter-spacing: -0.01em; margin-top: 34px; }
+  section > p, section li { color: var(--ink-soft); font-size: 15px; }
+  section > p { margin-top: 14px; max-width: 62em; }
+
+  /* ── Principle cards ── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 28px; }
+  .card {
+    background: var(--bg-raised); border: 1px solid var(--line);
+    border-radius: 16px; padding: 22px;
+    transition: border-color 200ms var(--ease-out), transform 200ms var(--ease-out);
+  }
+  .card:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+  .card .ic {
+    width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+    font-size: 15px; margin-bottom: 14px;
+    background: var(--green-soft); color: var(--green); border: 1px solid rgba(34, 192, 122, 0.3);
+  }
+  .card.blue .ic { background: var(--blue-soft); color: var(--blue); border-color: rgba(91, 155, 245, 0.3); }
+  .card h4 { font-size: 14.5px; font-weight: 700; }
+  .card p { margin-top: 7px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; }
+
+  /* ── Code blocks ── */
+  pre {
+    margin-top: 18px; position: relative;
+    background: var(--bg-panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 20px 22px;
+    font-family: var(--mono); font-size: 13px; line-height: 1.7;
+    overflow-x: auto; color: var(--ink-soft);
+  }
+  pre .cm { color: #5b6b7c; }
+  pre .kw { color: #79b8ff; }
+  pre .st { color: #7ee2a8; }
+  pre .fn { color: #d2a8ff; }
+  pre .ty { color: #ffab70; }
+  .copy {
+    position: absolute; top: 10px; right: 10px;
+    font-family: var(--sans); font-size: 11px; font-weight: 700;
+    color: var(--ink-faint); background: var(--bg-raised);
+    border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px;
+    cursor: pointer; transition: color 150ms, border-color 150ms, transform 120ms var(--ease-out);
+  }
+  .copy:active { transform: scale(0.94); }
+  .copy:hover { color: var(--green); border-color: var(--green); }
+
+  /* ── API reference tables ── */
+  .api { margin-top: 18px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .api-row { display: grid; grid-template-columns: minmax(230px, 34%) 1fr; border-top: 1px solid var(--line); }
+  .api-row:first-child { border-top: none; }
+  .api-row > div { padding: 15px 20px; }
+  .api-row .sig { font-family: var(--mono); font-size: 12.5px; color: var(--ink); background: var(--bg-raised); word-break: break-word; }
+  .api-row .sig .fn { color: #d2a8ff; }
+  .api-row .desc { font-size: 13.5px; color: var(--ink-soft); }
+  .api-row .desc .tag {
+    display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    vertical-align: 1px;
+  }
+  .tag.pub { background: var(--green-soft); color: var(--green); }
+  .tag.local { background: var(--blue-soft); color: var(--blue); }
+  @media (max-width: 700px) { .api-row { grid-template-columns: 1fr; } .api-row .desc { border-top: 1px dashed var(--line); } }
+
+  .note {
+    margin-top: 20px; display: flex; gap: 14px;
+    background: var(--green-soft); border: 1px solid rgba(34, 192, 122, 0.3);
+    border-radius: 14px; padding: 16px 20px; font-size: 13.5px; color: var(--ink-soft);
+  }
+  .note::before { content: "§"; color: var(--green); font-weight: 800; }
+  .note.amber { background: rgba(232, 161, 60, 0.09); border-color: rgba(232, 161, 60, 0.3); }
+  .note.amber::before { color: var(--amber); }
+
+  footer {
+    border-top: 1px solid var(--line); margin-top: 40px;
+    padding: 38px 28px 46px; text-align: center;
+    color: var(--ink-faint); font-size: 12.5px;
+  }
+  footer .m { font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="#">
+    <span class="seal">◈</span>
+    <span>CAOS SDK<small>Office of the Citizen</small></span>
+  </a>
+  <nav aria-label="Site">
+    <a href="#principles">Principles</a>
+    <a href="#install">Install</a>
+    <a href="#quickstart">Quick start</a>
+    <a href="#api">API</a>
+    <a href="#contracts">Contracts</a>
+  </nav>
+  <a class="gh" href="https://github.com/office-of-the-citizen/caos-sdk">GitHub ↗</a>
+</header>
+
+<main>
+  <div class="hero">
+    <span class="eyebrow">Constitutional infrastructure</span>
+    <h1>The official interface to the <em>public record</em>.</h1>
+    <p class="sub">
+      The CAOS SDK is how applications speak to the Constitutional Artificial
+      Operating System: typed transport contracts, a governed HTTP client, and
+      offline distribution of the permanent geography of Nigeria — 774 Local
+      Governments, verified once, rendered everywhere.
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#quickstart">Read the quick start</a>
+      <a class="btn btn-ghost" href="#api">API reference</a>
+    </div>
+    <div class="install">
+      <span><span class="p">$</span> npm install @office-of-the-citizen/caos-sdk</span>
+      <button class="copy" data-copy="npm install @office-of-the-citizen/caos-sdk">Copy</button>
+    </div>
+  </div>
+
+  <div class="wrap grid">
+    <aside class="sidenav" aria-label="On this page">
+      <p>On this page</p>
+      <a href="#principles">Principles</a>
+      <a href="#install">Installation</a>
+      <a href="#quickstart">Quick start</a>
+      <a href="#api">API reference</a>
+      <a href="#permanent">Permanent snapshot</a>
+      <a href="#contracts">Contracts</a>
+      <a href="#errors">Error model</a>
+      <a href="#versioning">Versioning</a>
+    </aside>
+
+    <div>
+      <section id="principles">
+        <h2><span class="k">01</span>What the SDK guarantees</h2>
+        <p>
+          This is not a convenience wrapper. The SDK is the constitutional boundary
+          between applications and the operating system — it carries truth out, and
+          nothing in.
+        </p>
+        <div class="cards">
+          <div class="card">
+            <div class="ic">✓</div>
+            <h4>Truth is projected, never composed</h4>
+            <p>Applications receive finished public records. Ranking, verification and
+            vocabulary arrive on the projection — the SDK adds no opinion of its own.</p>
+          </div>
+          <div class="card blue">
+            <div class="ic">◈</div>
+            <h4>Permanent geography, offline</h4>
+            <p>The published Engine&nbsp;10 permanent snapshot ships inside the package:
+            every state and Local Government resolves synchronously, with no network.</p>
+          </div>
+          <div class="card">
+            <div class="ic">λ</div>
+            <h4>Contracts are executable</h4>
+            <p>Every payload is validated by zod schemas exported from the package —
+            the same schemas the operating system emits against.</p>
+          </div>
+          <div class="card blue">
+            <div class="ic">⛨</div>
+            <h4>Honest silence</h4>
+            <p>UNKNOWN is a governed state. Missing truth arrives as explicit
+            missingness postures, never as nulls an application must guess about.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="install">
+        <h2><span class="k">02</span>Installation</h2>
+        <p>The package is published to GitHub Packages under the
+          <span style="font-family:var(--mono); font-size:13px">@office-of-the-citizen</span> scope.</p>
+<pre><button class="copy">Copy</button><code><span class="cm"># .npmrc — point the scope at GitHub Packages</span>
+@office-of-the-citizen:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=ghp_your_token_here
+
+<span class="cm"># then</span>
+npm install @office-of-the-citizen/caos-sdk</code></pre>
+        <div class="note">
+          Authentication needs a personal access token with the
+          <span style="font-family:var(--mono)">read:packages</span> scope. In CI, prefer
+          <span style="font-family:var(--mono)">NODE_AUTH_TOKEN</span>.
+        </div>
+      </section>
+
+      <section id="quickstart">
+        <h2><span class="k">03</span>Quick start</h2>
+        <p>Resolve a place from the permanent snapshot, then overlay live constitutional truth.</p>
+<pre><button class="copy">Copy</button><code><span class="kw">import</span> {
+  CaosClient,
+  getBySlug,
+  breadcrumb,
+  lgaNavigationTree,
+} <span class="kw">from</span> <span class="st">"@office-of-the-citizen/caos-sdk"</span>;
+
+<span class="cm">// 1. Permanent identity — synchronous, offline, always available</span>
+<span class="kw">const</span> place = <span class="fn">getBySlug</span>(<span class="st">"lg-oy-ibadan-north"</span>);
+<span class="kw">const</span> lineage = <span class="fn">breadcrumb</span>(place.canonical_id);
+
+<span class="cm">// 2. Live truth — through the Engine 12 gateway (may be unavailable)</span>
+<span class="kw">const</span> caos = <span class="kw">new</span> <span class="ty">CaosClient</span>(<span class="st">"https://gateway.example.ng"</span>);
+<span class="kw">const</span> record = <span class="kw">await</span> caos.<span class="fn">getPublicRecord</span>(place.slug);
+
+<span class="cm">// 3. Continue rendering when truth is missing — the record is honest about it</span>
+console.<span class="fn">log</span>(record.sections.chairman.badge.label); <span class="cm">// "Verified" | …</span></code></pre>
+        <div class="note amber">
+          Composition belongs to applications: load the permanent shell first, overlay
+          truth when reachable, and never collapse a page because the gateway is down.
+        </div>
+      </section>
+
+      <section id="api">
+        <h2><span class="k">04</span>API reference — public surface</h2>
+        <p>
+          <span class="tag pub" style="margin-left:0">network</span> methods speak to the
+          gateway. <span class="tag local">local</span> functions resolve from the packaged
+          snapshot with no I/O.
+        </p>
+        <h3>CaosClient</h3>
+        <div class="api">
+          <div class="api-row">
+            <div class="sig"><span class="fn">new CaosClient</span>(baseURL, options?)</div>
+            <div class="desc">Construct a client against a gateway root. Options carry a session token or API key for operator surfaces.</div>
+          </div>
+          <div class="api-row">
+            <div class="sig"><span class="fn">getPublicRecord</span>(slug)</div>
+            <div class="desc">One finished public record — sections, context, budget, activity, placeholders, vocabulary, provenance.<span class="tag pub">network</span></div>
+          </div>
+          <div class="api-row">
+            <div class="sig"><span class="fn">getPublicNavigation</span>()</div>
+            <div class="desc">The national navigation index: states and their Local Governments, as the OS projects them.<span class="tag pub">network</span></div>
+          </div>
+          <div class="api-row">
+            <div class="sig"><span class="fn">searchPublicRecords</span>(query, options?)</div>
+            <div class="desc">Engine&nbsp;11 search over prepared public records. Ranking is OS truth — clients only render.<span class="tag pub">network</span></div>
+          </div>
+          <div class="api-row">
+            <div class="sig"><span class="fn">getRuntimeIdentity</span>()</div>
+            <div class="desc">Gateway version handshake for the compatibility gate.<span class="tag pub">network</span></div>
+          </div>
+        </div>
+
+        <h3 id="permanent">Permanent snapshot</h3>
+        <div class="api">
+          <div class="api-row">
+            <div class="sig"><span class="fn">getBySlug</span>(slug) / <span class="fn">getByCanonicalId</span>(id)</div>
+            <div class="desc">Resolve one permanent spatial object — name, lineage, area, wards, polling units.<span class="tag local">local</span></div>
+          </div>
+          <div class="api-row">
+            <div class="sig"><span class="fn">breadcrumb</span>(canonicalId)</div>
+            <div class="desc">Root-first constitutional lineage: Nigeria → State → Local Government.<span class="tag local">local</span></div>
+          </div>
+          <div class="api-row">
+            <div class="sig"><span class="fn">lgaNavigationTree</span>()</div>
+            <div class="desc">Every state with its Local Governments — the offline discovery structure.<span class="tag local">local</span></div>
+          </div>
+          <div class="api-row">
+            <div class="sig"><span class="fn">listByClassification</span>(kind) / <span class="fn">listChildren</span>(id)</div>
+            <div class="desc">Enumerate governed objects by class, or the children of any object.<span class="tag local">local</span></div>
+          </div>
+          <div class="api-row">
+            <div class="sig"><span class="fn">getPermanentSnapshotMeta</span>()</div>
+            <div class="desc">Snapshot epoch, generation time, object counts and content hash — verify what you ship.<span class="tag local">local</span></div>
+          </div>
+        </div>
+        <div class="note">
+          The snapshot deliberately contains <strong>no population figures</strong>.
+          Population is live truth and arrives only on projections, with its own
+          verification posture.
+        </div>
+      </section>
+
+      <section id="contracts">
+        <h2><span class="k">05</span>Contracts</h2>
+        <p>
+          Every shape the OS emits is exported as a zod schema and a TypeScript type.
+          Validate at the boundary; render with confidence.
+        </p>
+<pre><button class="copy">Copy</button><code><span class="kw">import</span> {
+  PublicRecordSchema,
+  NavigationIndexSchema,
+  SearchResponseSchema,
+  <span class="kw">type</span> <span class="ty">PublicRecord</span>,
+  <span class="kw">type</span> <span class="ty">RecordSection</span>,
+  <span class="kw">type</span> <span class="ty">BadgePresentation</span>,
+} <span class="kw">from</span> <span class="st">"@office-of-the-citizen/caos-sdk"</span>;
+
+<span class="kw">const</span> parsed = PublicRecordSchema.<span class="fn">safeParse</span>(payload);
+<span class="kw">if</span> (!parsed.success) {
+  <span class="cm">// the transport lied — render the governed unavailable state</span>
+}</code></pre>
+      </section>
+
+      <section id="errors">
+        <h2><span class="k">06</span>Error model</h2>
+        <p>
+          Every transport failure normalises to a single
+          <span style="font-family:var(--mono); font-size:13px">CaosError</span> — code,
+          message, HTTP status and the raw envelope. No stringly-typed guessing.
+        </p>
+<pre><button class="copy">Copy</button><code><span class="kw">try</span> {
+  <span class="kw">await</span> caos.<span class="fn">getPublicRecord</span>(<span class="st">"lg-oy-ibadan-north"</span>);
+} <span class="kw">catch</span> (e) {
+  <span class="kw">if</span> (e <span class="kw">instanceof</span> <span class="ty">CaosError</span>) {
+    e.code;    <span class="cm">// "HTTP_503" | "NETWORK_ERROR" | governed code</span>
+    e.status;  <span class="cm">// 503</span>
+    e.detail;  <span class="cm">// operator-facing detail when provided</span>
+  }
+}</code></pre>
+      </section>
+
+      <section id="versioning">
+        <h2><span class="k">07</span>Versioning &amp; the compatibility gate</h2>
+        <p>
+          The SDK knows which gateway range it speaks
+          (<span style="font-family:var(--mono); font-size:13px">CAOS_REQUIRED_GATEWAY</span>)
+          and exposes its own build as
+          <span style="font-family:var(--mono); font-size:13px">CAOS_SDK_VERSION</span>.
+          Surface both in your footer; refuse silently-wrong conversations.
+        </p>
+<pre><button class="copy">Copy</button><code><span class="kw">import</span> { CAOS_SDK_VERSION, CAOS_REQUIRED_GATEWAY } <span class="kw">from</span> <span class="st">"@office-of-the-citizen/caos-sdk"</span>;
+
+<span class="kw">const</span> identity = <span class="kw">await</span> caos.<span class="fn">getRuntimeIdentity</span>();
+<span class="cm">// identity.gatewayVersion is checked against CAOS_REQUIRED_GATEWAY</span></code></pre>
+        <div class="note">
+          Projections are derived, disposable and rebuildable. A client that caches a
+          record caches a snapshot of truth — the provenance block tells you exactly
+          which build you hold.
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>Office of the Citizen — constitutional infrastructure for the public record.</p>
+  <p class="m" style="margin-top:8px">MIT · @office-of-the-citizen/caos-sdk</p>
+</footer>
+
+<script>
+  // Copy buttons — copy the adjacent code (or data-copy payload).
+  document.querySelectorAll(".copy").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const text = btn.dataset.copy ?? btn.parentElement.querySelector("code")?.innerText ?? "";
+      try {
+        await navigator.clipboard.writeText(text);
+        const prev = btn.textContent;
+        btn.textContent = "Copied";
+        setTimeout(() => (btn.textContent = prev), 1400);
+      } catch { /* clipboard unavailable — nothing to break */ }
+    });
+  });
+
+  // Scrollspy for the side navigation.
+  const links = [...document.querySelectorAll(".sidenav a")];
+  const targets = links
+    .map((a) => document.querySelector(a.getAttribute("href")))
+    .filter(Boolean);
+  const spy = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((a) =>
+          a.classList.toggle("on", a.getAttribute("href") === `#${entry.target.id}`),
+        );
+      });
+    },
+    { rootMargin: "-30% 0px -60% 0px" },
+  );
+  targets.forEach((t) => spy.observe(t));
+</script>
+</body>
+</html>
