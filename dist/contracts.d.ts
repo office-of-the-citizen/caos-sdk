@@ -594,6 +594,11 @@ export declare const ActivityEntrySchema: z.ZodObject<{
         surface_mark_treatment: string;
     }>>>;
     object_ref: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    /**
+     * Scope determines priority ordering in the citizen experience.
+     * LOCAL: specific to this object. NATIONAL: affects all objects of this kind.
+     */
+    scope: z.ZodDefault<z.ZodOptional<z.ZodEnum<["LOCAL", "NATIONAL"]>>>;
 }, "strip", z.ZodTypeAny, {
     presentation: {
         colour_role: string;
@@ -605,6 +610,7 @@ export declare const ActivityEntrySchema: z.ZodObject<{
     category: string;
     occurred_at: string;
     summary: string | null;
+    scope: "LOCAL" | "NATIONAL";
     badge?: {
         badge_code: string;
         label: string;
@@ -634,6 +640,115 @@ export declare const ActivityEntrySchema: z.ZodObject<{
         icon: string;
     } | null | undefined;
     object_ref?: string | null | undefined;
+    scope?: "LOCAL" | "NATIONAL" | undefined;
+}>;
+/**
+ * FAAC monthly allocation — one month's transfer from the Federation Account
+ * to this local government. Projected from admitted FAAC circulars; never
+ * app-authored. Maximum 12 recent months; older entries collapse into years.
+ */
+export declare const FaacMonthEntrySchema: z.ZodObject<{
+    period: z.ZodString;
+    amount: z.ZodNumber;
+    /** Registry-governed label for the period ("June 2026"). */
+    label: z.ZodString;
+    source_ref: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+}, "strip", z.ZodTypeAny, {
+    label: string;
+    amount: number;
+    period: string;
+    source_ref?: string | null | undefined;
+}, {
+    label: string;
+    amount: number;
+    period: string;
+    source_ref?: string | null | undefined;
+}>;
+export declare const FaacYearSummarySchema: z.ZodObject<{
+    year: z.ZodString;
+    total: z.ZodNumber;
+    months_count: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    total: number;
+    year: string;
+    months_count: number;
+}, {
+    total: number;
+    year: string;
+    months_count: number;
+}>;
+export declare const FaacProjectionSchema: z.ZodObject<{
+    /** Registry-governed heading ("Monthly Federal Allocation"). */
+    title: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+    /** Educational caption explaining what FAAC is. */
+    caption: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+    /** Most recent 12 monthly entries, newest first. */
+    months: z.ZodDefault<z.ZodArray<z.ZodObject<{
+        period: z.ZodString;
+        amount: z.ZodNumber;
+        /** Registry-governed label for the period ("June 2026"). */
+        label: z.ZodString;
+        source_ref: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    }, "strip", z.ZodTypeAny, {
+        label: string;
+        amount: number;
+        period: string;
+        source_ref?: string | null | undefined;
+    }, {
+        label: string;
+        amount: number;
+        period: string;
+        source_ref?: string | null | undefined;
+    }>, "many">>;
+    /** Older entries collapsed into annual summaries. */
+    years: z.ZodDefault<z.ZodArray<z.ZodObject<{
+        year: z.ZodString;
+        total: z.ZodNumber;
+        months_count: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        total: number;
+        year: string;
+        months_count: number;
+    }, {
+        total: number;
+        year: string;
+        months_count: number;
+    }>, "many">>;
+    /** Source authority (e.g. "FAAC Circular, Office of the Accountant-General"). */
+    authority: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    claim_refs: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+}, "strip", z.ZodTypeAny, {
+    title: string | null;
+    claim_refs: string[];
+    caption: string | null;
+    months: {
+        label: string;
+        amount: number;
+        period: string;
+        source_ref?: string | null | undefined;
+    }[];
+    years: {
+        total: number;
+        year: string;
+        months_count: number;
+    }[];
+    authority?: string | null | undefined;
+}, {
+    title?: string | null | undefined;
+    claim_refs?: string[] | undefined;
+    caption?: string | null | undefined;
+    months?: {
+        label: string;
+        amount: number;
+        period: string;
+        source_ref?: string | null | undefined;
+    }[] | undefined;
+    years?: {
+        total: number;
+        year: string;
+        months_count: number;
+    }[] | undefined;
+    authority?: string | null | undefined;
 }>;
 export declare const PublicRecordSchema: z.ZodObject<{
     record_type: z.ZodString;
@@ -1224,6 +1339,80 @@ export declare const PublicRecordSchema: z.ZodObject<{
         }[] | undefined;
         claim_refs?: string[] | undefined;
     }>>>;
+    /** FAAC monthly allocations — projected from admitted circulars. */
+    faac: z.ZodOptional<z.ZodNullable<z.ZodObject<{
+        /** Registry-governed heading ("Monthly Federal Allocation"). */
+        title: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+        /** Educational caption explaining what FAAC is. */
+        caption: z.ZodDefault<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+        /** Most recent 12 monthly entries, newest first. */
+        months: z.ZodDefault<z.ZodArray<z.ZodObject<{
+            period: z.ZodString;
+            amount: z.ZodNumber;
+            /** Registry-governed label for the period ("June 2026"). */
+            label: z.ZodString;
+            source_ref: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        }, "strip", z.ZodTypeAny, {
+            label: string;
+            amount: number;
+            period: string;
+            source_ref?: string | null | undefined;
+        }, {
+            label: string;
+            amount: number;
+            period: string;
+            source_ref?: string | null | undefined;
+        }>, "many">>;
+        /** Older entries collapsed into annual summaries. */
+        years: z.ZodDefault<z.ZodArray<z.ZodObject<{
+            year: z.ZodString;
+            total: z.ZodNumber;
+            months_count: z.ZodNumber;
+        }, "strip", z.ZodTypeAny, {
+            total: number;
+            year: string;
+            months_count: number;
+        }, {
+            total: number;
+            year: string;
+            months_count: number;
+        }>, "many">>;
+        /** Source authority (e.g. "FAAC Circular, Office of the Accountant-General"). */
+        authority: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        claim_refs: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+    }, "strip", z.ZodTypeAny, {
+        title: string | null;
+        claim_refs: string[];
+        caption: string | null;
+        months: {
+            label: string;
+            amount: number;
+            period: string;
+            source_ref?: string | null | undefined;
+        }[];
+        years: {
+            total: number;
+            year: string;
+            months_count: number;
+        }[];
+        authority?: string | null | undefined;
+    }, {
+        title?: string | null | undefined;
+        claim_refs?: string[] | undefined;
+        caption?: string | null | undefined;
+        months?: {
+            label: string;
+            amount: number;
+            period: string;
+            source_ref?: string | null | undefined;
+        }[] | undefined;
+        years?: {
+            total: number;
+            year: string;
+            months_count: number;
+        }[] | undefined;
+        authority?: string | null | undefined;
+    }>>>;
     activity: z.ZodOptional<z.ZodNullable<z.ZodArray<z.ZodObject<{
         activity_code: z.ZodString;
         category: z.ZodString;
@@ -1267,6 +1456,11 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark_treatment: string;
         }>>>;
         object_ref: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        /**
+         * Scope determines priority ordering in the citizen experience.
+         * LOCAL: specific to this object. NATIONAL: affects all objects of this kind.
+         */
+        scope: z.ZodDefault<z.ZodOptional<z.ZodEnum<["LOCAL", "NATIONAL"]>>>;
     }, "strip", z.ZodTypeAny, {
         presentation: {
             colour_role: string;
@@ -1278,6 +1472,7 @@ export declare const PublicRecordSchema: z.ZodObject<{
         category: string;
         occurred_at: string;
         summary: string | null;
+        scope: "LOCAL" | "NATIONAL";
         badge?: {
             badge_code: string;
             label: string;
@@ -1307,6 +1502,7 @@ export declare const PublicRecordSchema: z.ZodObject<{
             icon: string;
         } | null | undefined;
         object_ref?: string | null | undefined;
+        scope?: "LOCAL" | "NATIONAL" | undefined;
     }>, "many">>>;
 }, "strip", z.ZodTypeAny, {
     record_type: string;
@@ -1458,6 +1654,23 @@ export declare const PublicRecordSchema: z.ZodObject<{
         }[];
         claim_refs: string[];
     } | null | undefined;
+    faac?: {
+        title: string | null;
+        claim_refs: string[];
+        caption: string | null;
+        months: {
+            label: string;
+            amount: number;
+            period: string;
+            source_ref?: string | null | undefined;
+        }[];
+        years: {
+            total: number;
+            year: string;
+            months_count: number;
+        }[];
+        authority?: string | null | undefined;
+    } | null | undefined;
     activity?: {
         presentation: {
             colour_role: string;
@@ -1469,6 +1682,7 @@ export declare const PublicRecordSchema: z.ZodObject<{
         category: string;
         occurred_at: string;
         summary: string | null;
+        scope: "LOCAL" | "NATIONAL";
         badge?: {
             badge_code: string;
             label: string;
@@ -1629,6 +1843,23 @@ export declare const PublicRecordSchema: z.ZodObject<{
         }[] | undefined;
         claim_refs?: string[] | undefined;
     } | null | undefined;
+    faac?: {
+        title?: string | null | undefined;
+        claim_refs?: string[] | undefined;
+        caption?: string | null | undefined;
+        months?: {
+            label: string;
+            amount: number;
+            period: string;
+            source_ref?: string | null | undefined;
+        }[] | undefined;
+        years?: {
+            total: number;
+            year: string;
+            months_count: number;
+        }[] | undefined;
+        authority?: string | null | undefined;
+    } | null | undefined;
     activity?: {
         title: string;
         activity_code: string;
@@ -1649,6 +1880,7 @@ export declare const PublicRecordSchema: z.ZodObject<{
             icon: string;
         } | null | undefined;
         object_ref?: string | null | undefined;
+        scope?: "LOCAL" | "NATIONAL" | undefined;
     }[] | null | undefined;
 }>;
 export declare const NavigationIndexSchema: z.ZodObject<{
@@ -1823,4 +2055,7 @@ export type NavigationIndex = z.infer<typeof NavigationIndexSchema>;
 export type BudgetProjection = z.infer<typeof BudgetProjectionSchema>;
 export type ActivityEntry = z.infer<typeof ActivityEntrySchema>;
 export type IdentityFact = z.infer<typeof IdentityFactSchema>;
+export type FaacMonthEntry = z.infer<typeof FaacMonthEntrySchema>;
+export type FaacYearSummary = z.infer<typeof FaacYearSummarySchema>;
+export type FaacProjection = z.infer<typeof FaacProjectionSchema>;
 //# sourceMappingURL=contracts.d.ts.map

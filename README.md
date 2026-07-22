@@ -180,6 +180,34 @@ const refreshed = client.withSession(newToken);
 |--------|-------------|
 | `getGovernedClaim(claimId)` | Fetch a governed claim |
 
+### Participation (Engine 05)
+
+The Participation client provides civic-language methods for engaging with the Constitutional Participation Engine. Import via the `./participation` subpath export.
+
+```typescript
+import { ParticipationClient } from "@office-of-the-citizen/caos-sdk/participation";
+
+const participation = new ParticipationClient(httpClient);
+```
+
+| Method | Description |
+|--------|-------------|
+| `createQuestion(params)` | Submit a formal question to the operating system |
+| `createFOIRequest(params)` | File a Freedom of Information request |
+| `submitContribution(params)` | Submit a voluntary contribution |
+| `submitCorrection(params)` | Submit a correction to an existing assertion |
+| `submitChallenge(params)` | Challenge a constitutional assertion or decision |
+| `watchObject(params)` | Place a standing watch on a governed object |
+| `followInstitution(institutionId)` | Watch all participation activity for an institution |
+| `subscribe(params)` | Subscribe to participation updates |
+| `getCase(participationId)` | Fetch a participation case by ID |
+| `getCaseTimeline(participationId)` | Fetch the full lifecycle timeline for a case |
+| `getDemand(subjectRef)` | Get demand count for a subject |
+| `getTransparencyProfile(institutionId)` | Get institutional transparency summary |
+| `getModuleHealth()` | Check participation module operational status |
+| `removeWatch(watchId)` | Remove an active watch |
+| `unsubscribe(subscriptionId)` | Cancel a subscription |
+
 ## Error Handling
 
 The SDK throws `CaosError` for all API failures:

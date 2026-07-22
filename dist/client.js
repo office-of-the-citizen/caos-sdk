@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { CaosError } from './types.js';
+import { ParticipationClient } from './participation/client.js';
 import { CAOS_SDK_VERSION, CAOS_REQUIRED_GATEWAY, semverSatisfies, } from './identity.js';
 /**
  * Normalize any transport failure into a CaosError. Understands both the
@@ -24,6 +25,7 @@ function toCaosError(error) {
 }
 export class CaosClient {
     http;
+    _participation = null;
     constructor(baseURL, options) {
         const headers = {};
         if (options?.apiKey) {
@@ -40,6 +42,13 @@ export class CaosClient {
         });
         this.http.interceptors.response.use((r) => r, (error) => Promise.reject(toCaosError(error)));
     }
+    /** Constitutional Participation — governed civic interaction surface */
+    get participation() {
+        if (!this._participation) {
+            this._participation = new ParticipationClient(this.http);
+        }
+        return this._participation;
+    }
     // 1. Public records
     async getPublicRecord(slug) {
         const res = await this.http.get(`/api/v1/public/records/lga/${slug}`);
@@ -52,6 +61,26 @@ export class CaosClient {
     async searchPublicRecords(q, options) {
         const res = await this.http.get('/api/v1/public/search', {
             params: { q, limit: options?.limit, record_type: options?.recordType },
+        });
+        return res.data.data;
+    }
+    /**
+     * Resolve any identifier (CRN, external code, slug) to its Constitutional
+     * Resource Name via the Identity Service crosswalk.
+     */
+    async resolve(id) {
+        const res = await this.http.get('/api/v1/public/resolve', {
+            params: { id },
+        });
+        return res.data.data;
+    }
+    /**
+     * Ask a typed question and receive governed answer envelopes.
+     * The seven answer shapes (KI-7) ensure every response explains itself.
+     */
+    async ask(subject, predicate) {
+        const res = await this.http.get('/api/v1/public/ask', {
+            params: { subject, predicate },
         });
         return res.data.data;
     }

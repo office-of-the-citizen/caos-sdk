@@ -51,4 +51,67 @@ export interface DecisionItem {
     adjudicator_id: string | null;
     note: string | null;
 }
+export type AnswerShape = 'VERIFIED_VALUE' | 'PROVISIONAL_VALUE' | 'CONTESTED_RIVALS' | 'ASSERTED_UNKNOWN' | 'GOVERNED_ABSENCE' | 'LAWFUL_REFUSAL' | 'TEMPORAL_BOUNDARY';
+export interface AnswerQuestion {
+    predicate_id: string;
+    subjects: string[];
+    frame: Record<string, unknown>;
+    clocks: Record<string, string>;
+}
+export interface AnswerPosture {
+    verification_status: string;
+    publication: string;
+    contest: string;
+}
+export interface AnswerCitation {
+    crn: string;
+    excerpt?: string;
+    authority_class?: string;
+}
+/**
+ * The governed answer envelope. Every answer the OS emits carries this shape.
+ * The `shape` field determines which content fields are meaningful.
+ */
+export interface AnswerEnvelope {
+    answer_crn: string;
+    shape: AnswerShape;
+    question: AnswerQuestion;
+    content: {
+        kind: string;
+        value?: string;
+        display_name?: string;
+        person_crn?: string;
+        rivals?: Array<{
+            value: string;
+            display_name: string;
+            basis: string;
+        }>;
+        absence_class?: string;
+        refusal_basis?: string;
+        temporal_note?: string;
+    };
+    applicability: {
+        from: string | null;
+        to: string | null;
+        open: boolean;
+    };
+    posture: AnswerPosture;
+    citations: AnswerCitation[];
+    explanation: {
+        why: string;
+        grounding_chain?: string[];
+    };
+    resolved_against: {
+        ledger_seq: number;
+        registry_versions: Record<string, number>;
+    };
+    visibility_basis: string;
+}
+/** Response from the /ask endpoint. */
+export interface AskResponse {
+    query: string;
+    answers: AnswerEnvelope[];
+    total: number;
+    resolved_at: string;
+}
 //# sourceMappingURL=types.d.ts.map

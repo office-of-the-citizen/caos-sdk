@@ -161,6 +161,44 @@ export const ActivityEntrySchema = z.object({
   summary: z.string().nullable(),
   badge: BadgePresentationSchema.nullable().optional(),
   object_ref: z.string().nullable().optional(),
+  /**
+   * Scope determines priority ordering in the citizen experience.
+   * LOCAL: specific to this object. NATIONAL: affects all objects of this kind.
+   */
+  scope: z.enum(["LOCAL", "NATIONAL"]).optional().default("LOCAL"),
+});
+
+/**
+ * FAAC monthly allocation — one month's transfer from the Federation Account
+ * to this local government. Projected from admitted FAAC circulars; never
+ * app-authored. Maximum 12 recent months; older entries collapse into years.
+ */
+export const FaacMonthEntrySchema = z.object({
+  period: z.string(), // ISO month "2026-06"
+  amount: z.number(),
+  /** Registry-governed label for the period ("June 2026"). */
+  label: z.string(),
+  source_ref: z.string().nullable().optional(),
+});
+
+export const FaacYearSummarySchema = z.object({
+  year: z.string(), // "2024"
+  total: z.number(),
+  months_count: z.number(),
+});
+
+export const FaacProjectionSchema = z.object({
+  /** Registry-governed heading ("Monthly Federal Allocation"). */
+  title: z.string().nullable().optional().default(null),
+  /** Educational caption explaining what FAAC is. */
+  caption: z.string().nullable().optional().default(null),
+  /** Most recent 12 monthly entries, newest first. */
+  months: z.array(FaacMonthEntrySchema).default([]),
+  /** Older entries collapsed into annual summaries. */
+  years: z.array(FaacYearSummarySchema).default([]),
+  /** Source authority (e.g. "FAAC Circular, Office of the Accountant-General"). */
+  authority: z.string().nullable().optional(),
+  claim_refs: z.array(z.string()).default([]),
 });
 
 export const PublicRecordSchema = z.object({
@@ -202,6 +240,8 @@ export const PublicRecordSchema = z.object({
     .nullable()
     .optional(),
   budget: BudgetProjectionSchema.nullable().optional(),
+  /** FAAC monthly allocations — projected from admitted circulars. */
+  faac: FaacProjectionSchema.nullable().optional(),
   activity: z.array(ActivityEntrySchema).nullable().optional(),
 });
 
@@ -257,3 +297,6 @@ export type NavigationIndex = z.infer<typeof NavigationIndexSchema>;
 export type BudgetProjection = z.infer<typeof BudgetProjectionSchema>;
 export type ActivityEntry = z.infer<typeof ActivityEntrySchema>;
 export type IdentityFact = z.infer<typeof IdentityFactSchema>;
+export type FaacMonthEntry = z.infer<typeof FaacMonthEntrySchema>;
+export type FaacYearSummary = z.infer<typeof FaacYearSummarySchema>;
+export type FaacProjection = z.infer<typeof FaacProjectionSchema>;

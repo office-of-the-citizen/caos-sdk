@@ -1,18 +1,40 @@
 import { DecisionItem } from './types.js';
 import { PublicRecord, NavigationIndex, SearchResponse } from './contracts.js';
+import { ParticipationClient } from './participation/client.js';
 import { type RuntimeIdentity } from './identity.js';
 export declare class CaosClient {
     private http;
+    private _participation;
     constructor(baseURL: string, options?: {
         sessionToken?: string;
         apiKey?: string;
     });
+    /** Constitutional Participation — governed civic interaction surface */
+    get participation(): ParticipationClient;
     getPublicRecord(slug: string): Promise<PublicRecord>;
     getPublicNavigation(): Promise<NavigationIndex>;
     searchPublicRecords(q: string, options?: {
         limit?: number;
         recordType?: string;
     }): Promise<SearchResponse>;
+    /**
+     * Resolve any identifier (CRN, external code, slug) to its Constitutional
+     * Resource Name via the Identity Service crosswalk.
+     */
+    resolve(id: string): Promise<{
+        input: string;
+        crn: string;
+        stratum: string | null;
+        kind: string | null;
+        level: number | null;
+        method: string;
+        matched_external_id: string | null;
+    }>;
+    /**
+     * Ask a typed question and receive governed answer envelopes.
+     * The seven answer shapes (KI-7) ensure every response explains itself.
+     */
+    ask(subject: string, predicate?: string): Promise<import('./types.js').AskResponse>;
     login(apiKey: string): Promise<{
         session_id: string;
         principal_id: string;

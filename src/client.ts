@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { CaosError, DecisionItem, AdmissionDecisionOutcome } from './types.js';
 import { PublicRecord, NavigationIndex, SearchResponse } from './contracts.js';
+import { ParticipationClient } from './participation/client.js';
 import {
   CAOS_SDK_VERSION,
   CAOS_REQUIRED_GATEWAY,
@@ -36,6 +37,7 @@ function toCaosError(error: unknown): CaosError {
 
 export class CaosClient {
   private http: AxiosInstance;
+  private _participation: ParticipationClient | null = null;
 
   constructor(baseURL: string, options?: { sessionToken?: string; apiKey?: string }) {
     const headers: Record<string, string> = {};
@@ -58,6 +60,14 @@ export class CaosClient {
     );
   }
 
+  /** Constitutional Participation — governed civic interaction surface */
+  get participation(): ParticipationClient {
+    if (!this._participation) {
+      this._participation = new ParticipationClient(this.http);
+    }
+    return this._participation;
+  }
+
   // 1. Public records
   async getPublicRecord(slug: string): Promise<PublicRecord> {
     const res = await this.http.get<{ data: PublicRecord }>(`/api/v1/public/records/lga/${slug}`);
@@ -75,6 +85,36 @@ export class CaosClient {
   ): Promise<SearchResponse> {
     const res = await this.http.get<{ data: SearchResponse }>('/api/v1/public/search', {
       params: { q, limit: options?.limit, record_type: options?.recordType },
+    });
+    return res.data.data;
+  }
+
+  /**
+   * Resolve any identifier (CRN, external code, slug) to its Constitutional
+   * Resource Name via the Identity Service crosswalk.
+   */
+  async resolve(id: string): Promise<{
+    input: string;
+    crn: string;
+    stratum: string | null;
+    kind: string | null;
+    level: number | null;
+    method: string;
+    matched_external_id: string | null;
+  }> {
+    const res = await this.http.get<{ data: any }>('/api/v1/public/resolve', {
+      params: { id },
+    });
+    return res.data.data;
+  }
+
+  /**
+   * Ask a typed question and receive governed answer envelopes.
+   * The seven answer shapes (KI-7) ensure every response explains itself.
+   */
+  async ask(subject: string, predicate?: string): Promise<import('./types.js').AskResponse> {
+    const res = await this.http.get<{ data: import('./types.js').AskResponse }>('/api/v1/public/ask', {
+      params: { subject, predicate },
     });
     return res.data.data;
   }

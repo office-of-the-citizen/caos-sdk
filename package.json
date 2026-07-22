@@ -16,6 +16,11 @@
       "import": "./dist/permanent/index.js",
       "default": "./dist/permanent/index.js"
     },
+    "./participation": {
+      "types": "./dist/participation/index.d.ts",
+      "import": "./dist/participation/index.js",
+      "default": "./dist/participation/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
