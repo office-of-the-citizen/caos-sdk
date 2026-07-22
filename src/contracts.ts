@@ -285,6 +285,90 @@ export const SearchResponseSchema = z.object({
   results: z.array(SearchResultSchema),
 });
 
+/* ──────────────────────────────────────────────────────────────────────────
+   ANSWER CONTRACT — Knowledge Index §7A (seven governed shapes)
+   The AnswerEnvelope is the universal read surface of the Knowledge Index.
+   Every answer the OS emits carries one of seven shapes; the shape
+   determines which content fields are meaningful.
+   ────────────────────────────────────────────────────────────────────────── */
+
+export const AnswerShapeSchema = z.enum([
+  'VERIFIED_VALUE',
+  'PROVISIONAL_VALUE',
+  'CONTESTED_RIVALS',
+  'ASSERTED_UNKNOWN',
+  'GOVERNED_ABSENCE',
+  'LAWFUL_REFUSAL',
+  'TEMPORAL_BOUNDARY',
+]);
+
+export const AnswerPostureSchema = z.object({
+  verification_status: z.string(),
+  publication: z.string(),
+  contest: z.string(),
+});
+
+export const AnswerCitationSchema = z.object({
+  crn: z.string(),
+  excerpt: z.string().optional(),
+  authority_class: z.string().optional(),
+});
+
+export const AnswerContentSchema = z.object({
+  kind: z.string(),
+  value: z.string().nullable().optional(),
+  display_name: z.string().nullable().optional(),
+  person_crn: z.string().optional(),
+  rivals: z
+    .array(
+      z.object({
+        assertion_id: z.string().optional(),
+        value: z.string(),
+        display_name: z.string().optional(),
+        basis: z.string().optional(),
+        verification_status: z.string().nullable().optional(),
+        valid_from: z.string().nullable().optional(),
+        valid_to: z.string().nullable().optional(),
+      }),
+    )
+    .optional(),
+  absence_class: z.string().optional(),
+  refusal_basis: z.string().optional(),
+  temporal_note: z.string().optional(),
+});
+
+export const AnswerEnvelopeSchema = z.object({
+  answer_crn: z.string(),
+  shape: AnswerShapeSchema,
+  question: z.object({
+    predicate_id: z.string(),
+    subjects: z.array(z.string()),
+    frame: z.record(z.unknown()).optional().default({}),
+    clocks: z.record(z.string()).optional().default({}),
+  }),
+  content: AnswerContentSchema,
+  applicability: z.object({
+    from: z.string().nullable(),
+    to: z.string().nullable(),
+    open: z.boolean(),
+  }),
+  posture: AnswerPostureSchema,
+  citations: z.array(z.union([z.string(), AnswerCitationSchema])).default([]),
+  explanation: z.object({
+    why: z.string(),
+    grounding_chain: z.array(z.string()).optional(),
+  }),
+  resolved_against: z.object({
+    ledger_seq: z.number(),
+    registry_versions: z.record(z.number()).default({}),
+  }),
+  visibility_basis: z.string(),
+});
+
+// Answer type aliases are exported from ./types.ts (canonical consumer contract).
+// Only AnswerContent is new here (not present in types.ts).
+export type AnswerContent = z.infer<typeof AnswerContentSchema>;
+
 export type SearchResult = z.infer<typeof SearchResultSchema>;
 export type SearchResponse = z.infer<typeof SearchResponseSchema>;
 export type ContextPresentation = z.infer<typeof ContextPresentationSchema>;

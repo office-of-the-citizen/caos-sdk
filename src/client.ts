@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { CaosError, DecisionItem, AdmissionDecisionOutcome } from './types.js';
+import { CaosError, DecisionItem, AdmissionDecisionOutcome, ResolvedElement, AnswerEnvelope } from './types.js';
 import { PublicRecord, NavigationIndex, SearchResponse } from './contracts.js';
 import { ParticipationClient } from './participation/client.js';
 import {
@@ -109,12 +109,51 @@ export class CaosClient {
   }
 
   /**
-   * Ask a typed question and receive governed answer envelopes.
+   * Resolve a CRN to its governed element — the full data, visibility class,
+   * and ledger watermark. Calls the /resolve/:crn gateway endpoint.
+   *
+   * This is distinct from resolve(id) which performs identity resolution
+   * (any identifier → CRN). resolveCRN performs element resolution
+   * (CRN → governed element).
+   */
+  async resolveCRN(crn: string): Promise<ResolvedElement> {
+    const res = await this.http.get<{ data: ResolvedElement }>(
+      `/resolve/${encodeURIComponent(crn)}`,
+    );
+    return res.data.data;
+  }
+
+  /**
+   * Ask a typed question (GET, public surface) and receive governed answer envelopes.
    * The seven answer shapes (KI-7) ensure every response explains itself.
    */
-  async ask(subject: string, predicate?: string): Promise<import('./types.js').AskResponse> {
+  async askPublic(subject: string, predicate?: string): Promise<import('./types.js').AskResponse> {
     const res = await this.http.get<{ data: import('./types.js').AskResponse }>('/api/v1/public/ask', {
       params: { subject, predicate },
+    });
+    return res.data.data;
+  }
+
+  /**
+   * Submit a typed question (POST) and receive a single governed AnswerEnvelope.
+   * This is the primary read surface of the Knowledge Index (KI-7).
+   * The seven answer shapes ensure every response explains itself.
+   */
+  async ask(question: {
+    predicate_id: string;
+    subjects: string[];
+    frame?: Record<string, string>;
+    as_of?: string;
+    as_believed_at?: string;
+  }): Promise<AnswerEnvelope> {
+    const res = await this.http.post<{ data: AnswerEnvelope }>('/ask', {
+      predicate_id: question.predicate_id,
+      subjects: question.subjects,
+      frame: question.frame ?? {},
+      clocks: {
+        as_of: question.as_of,
+        as_believed_at: question.as_believed_at,
+      },
     });
     return res.data.data;
   }
