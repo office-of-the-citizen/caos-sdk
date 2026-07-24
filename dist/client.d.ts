@@ -1,4 +1,4 @@
-import { DecisionItem } from './types.js';
+import { DecisionItem, ResolvedElement, AnswerEnvelope } from './types.js';
 import { PublicRecord, NavigationIndex, SearchResponse } from './contracts.js';
 import { ParticipationClient } from './participation/client.js';
 import { type RuntimeIdentity } from './identity.js';
@@ -31,10 +31,31 @@ export declare class CaosClient {
         matched_external_id: string | null;
     }>;
     /**
-     * Ask a typed question and receive governed answer envelopes.
+     * Resolve a CRN to its governed element — the full data, visibility class,
+     * and ledger watermark. Calls the /resolve/:crn gateway endpoint.
+     *
+     * This is distinct from resolve(id) which performs identity resolution
+     * (any identifier → CRN). resolveCRN performs element resolution
+     * (CRN → governed element).
+     */
+    resolveCRN(crn: string): Promise<ResolvedElement>;
+    /**
+     * Ask a typed question (GET, public surface) and receive governed answer envelopes.
      * The seven answer shapes (KI-7) ensure every response explains itself.
      */
-    ask(subject: string, predicate?: string): Promise<import('./types.js').AskResponse>;
+    askPublic(subject: string, predicate?: string): Promise<import('./types.js').AskResponse>;
+    /**
+     * Submit a typed question (POST) and receive a single governed AnswerEnvelope.
+     * This is the primary read surface of the Knowledge Index (KI-7).
+     * The seven answer shapes ensure every response explains itself.
+     */
+    ask(question: {
+        predicate_id: string;
+        subjects: string[];
+        frame?: Record<string, string>;
+        as_of?: string;
+        as_believed_at?: string;
+    }): Promise<AnswerEnvelope>;
     login(apiKey: string): Promise<{
         session_id: string;
         principal_id: string;

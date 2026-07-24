@@ -289,19 +289,19 @@ describe('ParticipationClient — endpoint contracts', () => {
   it('watchObject calls POST /api/v1/participation/watch', async () => {
     const mockResponse = {
       watch_id: 'watch-001',
-      watched_crn: 'crn:s2:subject:budget',
+      watched_crn: 'caos:s2:subject:budget',
       active: true,
       created_at: '2026-07-01T12:00:00.000Z',
     };
     http.post.mockResolvedValue({ data: { data: mockResponse } });
 
     const result = await client.watchObject({
-      crn: 'crn:s2:subject:budget',
+      crn: 'caos:s2:subject:budget',
       scope: 'SUBJECT',
     });
 
     expect(http.post).toHaveBeenCalledWith('/api/v1/participation/watch', {
-      crn: 'crn:s2:subject:budget',
+      crn: 'caos:s2:subject:budget',
       scope: 'SUBJECT',
     });
     expect(WatchResultSchema.parse(result)).toEqual(mockResponse);
@@ -352,7 +352,7 @@ describe('ParticipationClient — endpoint contracts', () => {
   it('followInstitution delegates to watchObject with institution CRN', async () => {
     const mockResponse = {
       watch_id: 'watch-002',
-      watched_crn: 'crn:s2:institution:inst:001',
+      watched_crn: 'caos:s2:institution:inst:001',
       active: true,
       created_at: '2026-07-01T12:00:00.000Z',
     };
@@ -361,7 +361,7 @@ describe('ParticipationClient — endpoint contracts', () => {
     const result = await client.followInstitution('inst:001');
 
     expect(http.post).toHaveBeenCalledWith('/api/v1/participation/watch', {
-      crn: 'crn:s2:institution:inst:001',
+      crn: 'caos:s2:institution:inst:001',
       scope: 'INSTITUTION',
     });
     expect(WatchResultSchema.parse(result)).toEqual(mockResponse);

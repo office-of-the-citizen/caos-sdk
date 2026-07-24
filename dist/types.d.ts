@@ -1,6 +1,24 @@
 /**
  * Shared Type Definitions and Core Contracts for CAOS SDK.
  */
+export type CRNStratum = 's0' | 's1' | 's2' | 's3' | 's4' | 's5';
+export type CRNKind = 'artifact' | 'structure' | 'entity' | 'person' | 'organisation' | 'ku' | 'evidence' | 'claim' | 'assertion' | 'episode' | 'absence' | 'answer';
+export interface CRN {
+    raw: string;
+    stratum: CRNStratum;
+    kind: CRNKind;
+    designator: string;
+}
+/** The result of resolving a CRN to its governed element. */
+export interface ResolvedElement {
+    crn: string;
+    stratum: CRNStratum;
+    kind: CRNKind;
+    element: unknown;
+    visibility: 'PUBLIC' | 'RESTRICTED' | 'SEALED';
+    resolved_at: string;
+    ledger_seq: number;
+}
 export type LifecycleState = 'DRAFT' | 'ADMITTED' | 'PROJECTED' | 'SUPERSEDED' | 'RETIRED';
 export type MissingnessState = 'ABSENT' | 'REDUNDANT' | 'INCOMPLETE' | 'ESTABLISHED';
 export interface LawfulWriteContext {
@@ -50,6 +68,43 @@ export interface DecisionItem {
     adjudicated_at: string | null;
     adjudicator_id: string | null;
     note: string | null;
+    item?: {
+        id: number;
+        decision_kind: string;
+        reason: string;
+        priority: string;
+        adjudication_status: string;
+        resolved_by_actor_id?: string;
+        resolved_at?: string;
+        resolution_note?: string;
+    };
+    ku?: {
+        ku_id: string;
+        extracted_predicate: string;
+        extracted_subject: string;
+        extracted_value: string;
+        linked_subject_id?: string;
+        linked_value_id?: string;
+        corroboration_status: string;
+        source_artifact_id: string;
+        confidence_score: number;
+        c_extract: number;
+        c_entity: number;
+        c_predicate: number;
+        c_document: number;
+        lineage_metadata?: Record<string, unknown>;
+    };
+    corroboration?: {
+        peers: Array<{
+            ku_id: string;
+            issuer_id?: string;
+            extracted_value: string;
+            source_artifact_id: string;
+            corroboration_status: string;
+        }>;
+        reason: string;
+        independent_issuer_count_for_value: number;
+    };
 }
 export type AnswerShape = 'VERIFIED_VALUE' | 'PROVISIONAL_VALUE' | 'CONTESTED_RIVALS' | 'ASSERTED_UNKNOWN' | 'GOVERNED_ABSENCE' | 'LAWFUL_REFUSAL' | 'TEMPORAL_BOUNDARY';
 export interface AnswerQuestion {

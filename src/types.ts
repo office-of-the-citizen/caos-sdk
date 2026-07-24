@@ -111,6 +111,44 @@ export interface DecisionItem {
   adjudicated_at: string | null;
   adjudicator_id: string | null;
   note: string | null;
+  // Extended fields for detailed view
+  item?: {
+    id: number;
+    decision_kind: string;
+    reason: string;
+    priority: string;
+    adjudication_status: string;
+    resolved_by_actor_id?: string;
+    resolved_at?: string;
+    resolution_note?: string;
+  };
+  ku?: {
+    ku_id: string;
+    extracted_predicate: string;
+    extracted_subject: string;
+    extracted_value: string;
+    linked_subject_id?: string;
+    linked_value_id?: string;
+    corroboration_status: string;
+    source_artifact_id: string;
+    confidence_score: number;
+    c_extract: number;
+    c_entity: number;
+    c_predicate: number;
+    c_document: number;
+    lineage_metadata?: Record<string, unknown>;
+  };
+  corroboration?: {
+    peers: Array<{
+      ku_id: string;
+      issuer_id?: string;
+      extracted_value: string;
+      source_artifact_id: string;
+      corroboration_status: string;
+    }>;
+    reason: string;
+    independent_issuer_count_for_value: number;
+  };
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

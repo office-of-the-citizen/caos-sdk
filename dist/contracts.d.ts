@@ -178,6 +178,12 @@ export declare const RecordSectionSchema: z.ZodObject<{
     }>;
     evidence: z.ZodOptional<z.ZodNullable<z.ZodUnknown>>;
 }, "strip", z.ZodTypeAny, {
+    answer: {
+        value: string;
+        kind: string;
+        display_name: string | null;
+        portrait: string | null;
+    } | null;
     section_code: string;
     question: string;
     display_label: string | null;
@@ -186,12 +192,6 @@ export declare const RecordSectionSchema: z.ZodObject<{
     claim_ref: string | null;
     valid_from: string | null;
     valid_to: string | null;
-    answer: {
-        value: string;
-        kind: string;
-        display_name: string | null;
-        portrait: string | null;
-    } | null;
     missingness: {
         label: string;
         colour_role: string;
@@ -207,14 +207,20 @@ export declare const RecordSectionSchema: z.ZodObject<{
         surface_mark: string;
         surface_mark_treatment: string;
     };
+    evidence?: unknown;
     verification?: z.objectOutputType<{
         claim_id: z.ZodOptional<z.ZodString>;
         verification_status: z.ZodOptional<z.ZodString>;
         badge_code: z.ZodOptional<z.ZodString>;
         assessed_at: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough"> | null | undefined;
-    evidence?: unknown;
 }, {
+    answer: {
+        value: string;
+        kind: string;
+        display_name: string | null;
+        portrait: string | null;
+    } | null;
     section_code: string;
     question: string;
     layout_slot: string;
@@ -222,12 +228,6 @@ export declare const RecordSectionSchema: z.ZodObject<{
     claim_ref: string | null;
     valid_from: string | null;
     valid_to: string | null;
-    answer: {
-        value: string;
-        kind: string;
-        display_name: string | null;
-        portrait: string | null;
-    } | null;
     missingness: {
         label: string;
         colour_role: string;
@@ -243,6 +243,7 @@ export declare const RecordSectionSchema: z.ZodObject<{
         surface_mark: string;
         surface_mark_treatment: string;
     };
+    evidence?: unknown;
     display_label?: string | null | undefined;
     verification?: z.objectInputType<{
         claim_id: z.ZodOptional<z.ZodString>;
@@ -250,7 +251,6 @@ export declare const RecordSectionSchema: z.ZodObject<{
         badge_code: z.ZodOptional<z.ZodString>;
         assessed_at: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough"> | null | undefined;
-    evidence?: unknown;
 }>;
 /** Registry-governed presentation hints for a context entry. */
 export declare const ContextPresentationSchema: z.ZodObject<{
@@ -890,6 +890,12 @@ export declare const PublicRecordSchema: z.ZodObject<{
         }>;
         evidence: z.ZodOptional<z.ZodNullable<z.ZodUnknown>>;
     }, "strip", z.ZodTypeAny, {
+        answer: {
+            value: string;
+            kind: string;
+            display_name: string | null;
+            portrait: string | null;
+        } | null;
         section_code: string;
         question: string;
         display_label: string | null;
@@ -898,12 +904,6 @@ export declare const PublicRecordSchema: z.ZodObject<{
         claim_ref: string | null;
         valid_from: string | null;
         valid_to: string | null;
-        answer: {
-            value: string;
-            kind: string;
-            display_name: string | null;
-            portrait: string | null;
-        } | null;
         missingness: {
             label: string;
             colour_role: string;
@@ -919,14 +919,20 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark: string;
             surface_mark_treatment: string;
         };
+        evidence?: unknown;
         verification?: z.objectOutputType<{
             claim_id: z.ZodOptional<z.ZodString>;
             verification_status: z.ZodOptional<z.ZodString>;
             badge_code: z.ZodOptional<z.ZodString>;
             assessed_at: z.ZodOptional<z.ZodString>;
         }, z.ZodTypeAny, "passthrough"> | null | undefined;
-        evidence?: unknown;
     }, {
+        answer: {
+            value: string;
+            kind: string;
+            display_name: string | null;
+            portrait: string | null;
+        } | null;
         section_code: string;
         question: string;
         layout_slot: string;
@@ -934,12 +940,6 @@ export declare const PublicRecordSchema: z.ZodObject<{
         claim_ref: string | null;
         valid_from: string | null;
         valid_to: string | null;
-        answer: {
-            value: string;
-            kind: string;
-            display_name: string | null;
-            portrait: string | null;
-        } | null;
         missingness: {
             label: string;
             colour_role: string;
@@ -955,6 +955,7 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark: string;
             surface_mark_treatment: string;
         };
+        evidence?: unknown;
         display_label?: string | null | undefined;
         verification?: z.objectInputType<{
             claim_id: z.ZodOptional<z.ZodString>;
@@ -962,7 +963,6 @@ export declare const PublicRecordSchema: z.ZodObject<{
             badge_code: z.ZodOptional<z.ZodString>;
             assessed_at: z.ZodOptional<z.ZodString>;
         }, z.ZodTypeAny, "passthrough"> | null | undefined;
-        evidence?: unknown;
     }>>;
     context: z.ZodArray<z.ZodObject<{
         provider: z.ZodString;
@@ -1524,6 +1524,12 @@ export declare const PublicRecordSchema: z.ZodObject<{
         } | null;
     };
     sections: Record<string, {
+        answer: {
+            value: string;
+            kind: string;
+            display_name: string | null;
+            portrait: string | null;
+        } | null;
         section_code: string;
         question: string;
         display_label: string | null;
@@ -1532,12 +1538,6 @@ export declare const PublicRecordSchema: z.ZodObject<{
         claim_ref: string | null;
         valid_from: string | null;
         valid_to: string | null;
-        answer: {
-            value: string;
-            kind: string;
-            display_name: string | null;
-            portrait: string | null;
-        } | null;
         missingness: {
             label: string;
             colour_role: string;
@@ -1553,13 +1553,13 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark: string;
             surface_mark_treatment: string;
         };
+        evidence?: unknown;
         verification?: z.objectOutputType<{
             claim_id: z.ZodOptional<z.ZodString>;
             verification_status: z.ZodOptional<z.ZodString>;
             badge_code: z.ZodOptional<z.ZodString>;
             assessed_at: z.ZodOptional<z.ZodString>;
         }, z.ZodTypeAny, "passthrough"> | null | undefined;
-        evidence?: unknown;
     }>;
     context: {
         label: string;
@@ -1713,6 +1713,12 @@ export declare const PublicRecordSchema: z.ZodObject<{
         } | null;
     };
     sections: Record<string, {
+        answer: {
+            value: string;
+            kind: string;
+            display_name: string | null;
+            portrait: string | null;
+        } | null;
         section_code: string;
         question: string;
         layout_slot: string;
@@ -1720,12 +1726,6 @@ export declare const PublicRecordSchema: z.ZodObject<{
         claim_ref: string | null;
         valid_from: string | null;
         valid_to: string | null;
-        answer: {
-            value: string;
-            kind: string;
-            display_name: string | null;
-            portrait: string | null;
-        } | null;
         missingness: {
             label: string;
             colour_role: string;
@@ -1741,6 +1741,7 @@ export declare const PublicRecordSchema: z.ZodObject<{
             surface_mark: string;
             surface_mark_treatment: string;
         };
+        evidence?: unknown;
         display_label?: string | null | undefined;
         verification?: z.objectInputType<{
             claim_id: z.ZodOptional<z.ZodString>;
@@ -1748,7 +1749,6 @@ export declare const PublicRecordSchema: z.ZodObject<{
             badge_code: z.ZodOptional<z.ZodString>;
             assessed_at: z.ZodOptional<z.ZodString>;
         }, z.ZodTypeAny, "passthrough"> | null | undefined;
-        evidence?: unknown;
     }>;
     context: {
         label: string;
@@ -2043,6 +2043,352 @@ export declare const SearchResponseSchema: z.ZodObject<{
     }[];
     total?: number | undefined;
 }>;
+export declare const AnswerShapeSchema: z.ZodEnum<["VERIFIED_VALUE", "PROVISIONAL_VALUE", "CONTESTED_RIVALS", "ASSERTED_UNKNOWN", "GOVERNED_ABSENCE", "LAWFUL_REFUSAL", "TEMPORAL_BOUNDARY"]>;
+export declare const AnswerPostureSchema: z.ZodObject<{
+    verification_status: z.ZodString;
+    publication: z.ZodString;
+    contest: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    verification_status: string;
+    publication: string;
+    contest: string;
+}, {
+    verification_status: string;
+    publication: string;
+    contest: string;
+}>;
+export declare const AnswerCitationSchema: z.ZodObject<{
+    crn: z.ZodString;
+    excerpt: z.ZodOptional<z.ZodString>;
+    authority_class: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    crn: string;
+    excerpt?: string | undefined;
+    authority_class?: string | undefined;
+}, {
+    crn: string;
+    excerpt?: string | undefined;
+    authority_class?: string | undefined;
+}>;
+export declare const AnswerContentSchema: z.ZodObject<{
+    kind: z.ZodString;
+    value: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    display_name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    person_crn: z.ZodOptional<z.ZodString>;
+    rivals: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        assertion_id: z.ZodOptional<z.ZodString>;
+        value: z.ZodString;
+        display_name: z.ZodOptional<z.ZodString>;
+        basis: z.ZodOptional<z.ZodString>;
+        verification_status: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        valid_from: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        valid_to: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    }, "strip", z.ZodTypeAny, {
+        value: string;
+        display_name?: string | undefined;
+        verification_status?: string | null | undefined;
+        valid_from?: string | null | undefined;
+        valid_to?: string | null | undefined;
+        assertion_id?: string | undefined;
+        basis?: string | undefined;
+    }, {
+        value: string;
+        display_name?: string | undefined;
+        verification_status?: string | null | undefined;
+        valid_from?: string | null | undefined;
+        valid_to?: string | null | undefined;
+        assertion_id?: string | undefined;
+        basis?: string | undefined;
+    }>, "many">>;
+    absence_class: z.ZodOptional<z.ZodString>;
+    refusal_basis: z.ZodOptional<z.ZodString>;
+    temporal_note: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    kind: string;
+    value?: string | null | undefined;
+    display_name?: string | null | undefined;
+    person_crn?: string | undefined;
+    rivals?: {
+        value: string;
+        display_name?: string | undefined;
+        verification_status?: string | null | undefined;
+        valid_from?: string | null | undefined;
+        valid_to?: string | null | undefined;
+        assertion_id?: string | undefined;
+        basis?: string | undefined;
+    }[] | undefined;
+    absence_class?: string | undefined;
+    refusal_basis?: string | undefined;
+    temporal_note?: string | undefined;
+}, {
+    kind: string;
+    value?: string | null | undefined;
+    display_name?: string | null | undefined;
+    person_crn?: string | undefined;
+    rivals?: {
+        value: string;
+        display_name?: string | undefined;
+        verification_status?: string | null | undefined;
+        valid_from?: string | null | undefined;
+        valid_to?: string | null | undefined;
+        assertion_id?: string | undefined;
+        basis?: string | undefined;
+    }[] | undefined;
+    absence_class?: string | undefined;
+    refusal_basis?: string | undefined;
+    temporal_note?: string | undefined;
+}>;
+export declare const AnswerEnvelopeSchema: z.ZodObject<{
+    answer_crn: z.ZodString;
+    shape: z.ZodEnum<["VERIFIED_VALUE", "PROVISIONAL_VALUE", "CONTESTED_RIVALS", "ASSERTED_UNKNOWN", "GOVERNED_ABSENCE", "LAWFUL_REFUSAL", "TEMPORAL_BOUNDARY"]>;
+    question: z.ZodObject<{
+        predicate_id: z.ZodString;
+        subjects: z.ZodArray<z.ZodString, "many">;
+        frame: z.ZodDefault<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>>;
+        clocks: z.ZodDefault<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>>;
+    }, "strip", z.ZodTypeAny, {
+        predicate_id: string;
+        subjects: string[];
+        frame: Record<string, unknown>;
+        clocks: Record<string, string>;
+    }, {
+        predicate_id: string;
+        subjects: string[];
+        frame?: Record<string, unknown> | undefined;
+        clocks?: Record<string, string> | undefined;
+    }>;
+    content: z.ZodObject<{
+        kind: z.ZodString;
+        value: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        display_name: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        person_crn: z.ZodOptional<z.ZodString>;
+        rivals: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            assertion_id: z.ZodOptional<z.ZodString>;
+            value: z.ZodString;
+            display_name: z.ZodOptional<z.ZodString>;
+            basis: z.ZodOptional<z.ZodString>;
+            verification_status: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+            valid_from: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+            valid_to: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+        }, "strip", z.ZodTypeAny, {
+            value: string;
+            display_name?: string | undefined;
+            verification_status?: string | null | undefined;
+            valid_from?: string | null | undefined;
+            valid_to?: string | null | undefined;
+            assertion_id?: string | undefined;
+            basis?: string | undefined;
+        }, {
+            value: string;
+            display_name?: string | undefined;
+            verification_status?: string | null | undefined;
+            valid_from?: string | null | undefined;
+            valid_to?: string | null | undefined;
+            assertion_id?: string | undefined;
+            basis?: string | undefined;
+        }>, "many">>;
+        absence_class: z.ZodOptional<z.ZodString>;
+        refusal_basis: z.ZodOptional<z.ZodString>;
+        temporal_note: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        kind: string;
+        value?: string | null | undefined;
+        display_name?: string | null | undefined;
+        person_crn?: string | undefined;
+        rivals?: {
+            value: string;
+            display_name?: string | undefined;
+            verification_status?: string | null | undefined;
+            valid_from?: string | null | undefined;
+            valid_to?: string | null | undefined;
+            assertion_id?: string | undefined;
+            basis?: string | undefined;
+        }[] | undefined;
+        absence_class?: string | undefined;
+        refusal_basis?: string | undefined;
+        temporal_note?: string | undefined;
+    }, {
+        kind: string;
+        value?: string | null | undefined;
+        display_name?: string | null | undefined;
+        person_crn?: string | undefined;
+        rivals?: {
+            value: string;
+            display_name?: string | undefined;
+            verification_status?: string | null | undefined;
+            valid_from?: string | null | undefined;
+            valid_to?: string | null | undefined;
+            assertion_id?: string | undefined;
+            basis?: string | undefined;
+        }[] | undefined;
+        absence_class?: string | undefined;
+        refusal_basis?: string | undefined;
+        temporal_note?: string | undefined;
+    }>;
+    applicability: z.ZodObject<{
+        from: z.ZodNullable<z.ZodString>;
+        to: z.ZodNullable<z.ZodString>;
+        open: z.ZodBoolean;
+    }, "strip", z.ZodTypeAny, {
+        from: string | null;
+        to: string | null;
+        open: boolean;
+    }, {
+        from: string | null;
+        to: string | null;
+        open: boolean;
+    }>;
+    posture: z.ZodObject<{
+        verification_status: z.ZodString;
+        publication: z.ZodString;
+        contest: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        verification_status: string;
+        publication: string;
+        contest: string;
+    }, {
+        verification_status: string;
+        publication: string;
+        contest: string;
+    }>;
+    citations: z.ZodDefault<z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodObject<{
+        crn: z.ZodString;
+        excerpt: z.ZodOptional<z.ZodString>;
+        authority_class: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        crn: string;
+        excerpt?: string | undefined;
+        authority_class?: string | undefined;
+    }, {
+        crn: string;
+        excerpt?: string | undefined;
+        authority_class?: string | undefined;
+    }>]>, "many">>;
+    explanation: z.ZodObject<{
+        why: z.ZodString;
+        grounding_chain: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    }, "strip", z.ZodTypeAny, {
+        why: string;
+        grounding_chain?: string[] | undefined;
+    }, {
+        why: string;
+        grounding_chain?: string[] | undefined;
+    }>;
+    resolved_against: z.ZodObject<{
+        ledger_seq: z.ZodNumber;
+        registry_versions: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodNumber>>;
+    }, "strip", z.ZodTypeAny, {
+        ledger_seq: number;
+        registry_versions: Record<string, number>;
+    }, {
+        ledger_seq: number;
+        registry_versions?: Record<string, number> | undefined;
+    }>;
+    visibility_basis: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    explanation: {
+        why: string;
+        grounding_chain?: string[] | undefined;
+    };
+    question: {
+        predicate_id: string;
+        subjects: string[];
+        frame: Record<string, unknown>;
+        clocks: Record<string, string>;
+    };
+    posture: {
+        verification_status: string;
+        publication: string;
+        contest: string;
+    };
+    answer_crn: string;
+    shape: "VERIFIED_VALUE" | "PROVISIONAL_VALUE" | "CONTESTED_RIVALS" | "ASSERTED_UNKNOWN" | "GOVERNED_ABSENCE" | "LAWFUL_REFUSAL" | "TEMPORAL_BOUNDARY";
+    content: {
+        kind: string;
+        value?: string | null | undefined;
+        display_name?: string | null | undefined;
+        person_crn?: string | undefined;
+        rivals?: {
+            value: string;
+            display_name?: string | undefined;
+            verification_status?: string | null | undefined;
+            valid_from?: string | null | undefined;
+            valid_to?: string | null | undefined;
+            assertion_id?: string | undefined;
+            basis?: string | undefined;
+        }[] | undefined;
+        absence_class?: string | undefined;
+        refusal_basis?: string | undefined;
+        temporal_note?: string | undefined;
+    };
+    applicability: {
+        from: string | null;
+        to: string | null;
+        open: boolean;
+    };
+    citations: (string | {
+        crn: string;
+        excerpt?: string | undefined;
+        authority_class?: string | undefined;
+    })[];
+    resolved_against: {
+        ledger_seq: number;
+        registry_versions: Record<string, number>;
+    };
+    visibility_basis: string;
+}, {
+    explanation: {
+        why: string;
+        grounding_chain?: string[] | undefined;
+    };
+    question: {
+        predicate_id: string;
+        subjects: string[];
+        frame?: Record<string, unknown> | undefined;
+        clocks?: Record<string, string> | undefined;
+    };
+    posture: {
+        verification_status: string;
+        publication: string;
+        contest: string;
+    };
+    answer_crn: string;
+    shape: "VERIFIED_VALUE" | "PROVISIONAL_VALUE" | "CONTESTED_RIVALS" | "ASSERTED_UNKNOWN" | "GOVERNED_ABSENCE" | "LAWFUL_REFUSAL" | "TEMPORAL_BOUNDARY";
+    content: {
+        kind: string;
+        value?: string | null | undefined;
+        display_name?: string | null | undefined;
+        person_crn?: string | undefined;
+        rivals?: {
+            value: string;
+            display_name?: string | undefined;
+            verification_status?: string | null | undefined;
+            valid_from?: string | null | undefined;
+            valid_to?: string | null | undefined;
+            assertion_id?: string | undefined;
+            basis?: string | undefined;
+        }[] | undefined;
+        absence_class?: string | undefined;
+        refusal_basis?: string | undefined;
+        temporal_note?: string | undefined;
+    };
+    applicability: {
+        from: string | null;
+        to: string | null;
+        open: boolean;
+    };
+    resolved_against: {
+        ledger_seq: number;
+        registry_versions?: Record<string, number> | undefined;
+    };
+    visibility_basis: string;
+    citations?: (string | {
+        crn: string;
+        excerpt?: string | undefined;
+        authority_class?: string | undefined;
+    })[] | undefined;
+}>;
+export type AnswerContent = z.infer<typeof AnswerContentSchema>;
 export type SearchResult = z.infer<typeof SearchResultSchema>;
 export type SearchResponse = z.infer<typeof SearchResponseSchema>;
 export type ContextPresentation = z.infer<typeof ContextPresentationSchema>;

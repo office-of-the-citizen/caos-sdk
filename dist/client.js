@@ -75,12 +75,41 @@ export class CaosClient {
         return res.data.data;
     }
     /**
-     * Ask a typed question and receive governed answer envelopes.
+     * Resolve a CRN to its governed element — the full data, visibility class,
+     * and ledger watermark. Calls the /resolve/:crn gateway endpoint.
+     *
+     * This is distinct from resolve(id) which performs identity resolution
+     * (any identifier → CRN). resolveCRN performs element resolution
+     * (CRN → governed element).
+     */
+    async resolveCRN(crn) {
+        const res = await this.http.get(`/resolve/${encodeURIComponent(crn)}`);
+        return res.data.data;
+    }
+    /**
+     * Ask a typed question (GET, public surface) and receive governed answer envelopes.
      * The seven answer shapes (KI-7) ensure every response explains itself.
      */
-    async ask(subject, predicate) {
+    async askPublic(subject, predicate) {
         const res = await this.http.get('/api/v1/public/ask', {
             params: { subject, predicate },
+        });
+        return res.data.data;
+    }
+    /**
+     * Submit a typed question (POST) and receive a single governed AnswerEnvelope.
+     * This is the primary read surface of the Knowledge Index (KI-7).
+     * The seven answer shapes ensure every response explains itself.
+     */
+    async ask(question) {
+        const res = await this.http.post('/ask', {
+            predicate_id: question.predicate_id,
+            subjects: question.subjects,
+            frame: question.frame ?? {},
+            clocks: {
+                as_of: question.as_of,
+                as_believed_at: question.as_believed_at,
+            },
         });
         return res.data.data;
     }

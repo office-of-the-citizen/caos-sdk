@@ -21,6 +21,12 @@ import type {
   SubmitChallengeParams,
   WatchObjectParams,
   SubscribeParams,
+  ParticipationQueueResponse,
+  AssignCaseParams,
+  EscalateCaseParams,
+  RespondToCaseParams,
+  CloseCaseParams,
+  CaseActionResult,
 } from './types.js';
 import type { ModuleHealth } from './contracts.js';
 
@@ -147,8 +153,83 @@ export class ParticipationClient {
 
   async followInstitution(institutionId: string): Promise<WatchResult> {
     return this.watchObject({
-      crn: `crn:s2:institution:${institutionId}`,
+      crn: `caos:s2:institution:${institutionId}`,
       scope: 'INSTITUTION',
     });
+  }
+
+  // ── Participation Ops (Control Room dashboard) ────────────────────────────
+
+  /**
+   * Get the participation queue with cases and stats.
+   * Used by Control Room to display the participation dashboard.
+   */
+  async getQueue(options?: {
+    type?: string;
+    state?: string;
+    service?: string;
+    priority?: string;
+  }): Promise<ParticipationQueueResponse> {
+    const res = await this.http.get<{ data: ParticipationQueueResponse }>(
+      '/api/ops/control/participation',
+      { params: options }
+    );
+    return res.data.data;
+  }
+
+  /**
+   * Assign a case to an actor.
+   */
+  async assignCase(
+    participationId: string,
+    params: AssignCaseParams
+  ): Promise<CaseActionResult> {
+    const res = await this.http.post<{ data: CaseActionResult }>(
+      `/api/v1/participation/${participationId}/assign`,
+      params
+    );
+    return res.data.data;
+  }
+
+  /**
+   * Escalate a case along an escalation path.
+   */
+  async escalateCase(
+    participationId: string,
+    params: EscalateCaseParams
+  ): Promise<CaseActionResult> {
+    const res = await this.http.post<{ data: CaseActionResult }>(
+      `/api/v1/participation/${participationId}/escalate`,
+      params
+    );
+    return res.data.data;
+  }
+
+  /**
+   * Record a response to a participation case.
+   */
+  async respondToCase(
+    participationId: string,
+    params: RespondToCaseParams
+  ): Promise<CaseActionResult> {
+    const res = await this.http.post<{ data: CaseActionResult }>(
+      `/api/v1/participation/${participationId}/respond`,
+      params
+    );
+    return res.data.data;
+  }
+
+  /**
+   * Close a participation case with a reason.
+   */
+  async closeCase(
+    participationId: string,
+    params: CloseCaseParams
+  ): Promise<CaseActionResult> {
+    const res = await this.http.post<{ data: CaseActionResult }>(
+      `/api/v1/participation/${participationId}/close`,
+      params
+    );
+    return res.data.data;
   }
 }

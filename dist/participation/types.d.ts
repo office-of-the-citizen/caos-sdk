@@ -121,4 +121,167 @@ export interface SubscribeParams {
     frequency?: 'IMMEDIATE' | 'DAILY_DIGEST' | 'WEEKLY_DIGEST';
     filters?: Record<string, unknown>;
 }
+export type SlaStatus = 'on_track' | 'warning' | 'breached' | 'none';
+export interface ParticipationCaseRow {
+    participation_id: string;
+    participation_type: string;
+    lifecycle_state: string;
+    service_ref: string | null;
+    channel: string;
+    priority: string;
+    institution_name: string | null;
+    created_at: string;
+    filed_at: string | null;
+    closed_at: string | null;
+    outcome: string | null;
+    sla_status: SlaStatus;
+}
+export interface ParticipationQueueStats {
+    total_open: number;
+    critical_sla: number;
+    silence_today: number;
+}
+export interface ParticipationQueueResponse {
+    cases: ParticipationCaseRow[];
+    stats: ParticipationQueueStats;
+}
+export interface AssignCaseParams {
+    assignee?: string;
+    priority?: string;
+    notes?: string;
+}
+export interface EscalateCaseParams extends AssignCaseParams {
+    escalation_path?: string;
+}
+export interface RespondToCaseParams {
+    response_note: string;
+}
+export interface CloseCaseParams {
+    reason: string;
+}
+export interface CaseActionResult {
+    success: boolean;
+    participation_id: string;
+    message?: string;
+}
+export type EpistemicKind = 'LEGISLATED' | 'DECLARED' | 'OBSERVED' | 'REPORTED';
+export type CorroborationStatus = 'VERIFIED' | 'PROVISIONAL' | 'DISPUTED' | 'SUPERSEDED';
+export interface KnowledgeUnit {
+    ku_id: string;
+    artifact_id: string;
+    chunk_id: string;
+    subject: string;
+    predicate: string;
+    value: string;
+    epistemic_kind: EpistemicKind;
+    confidence: number;
+    corroboration: CorroborationStatus;
+    superseded_by: string | null;
+    extractor_version: string;
+    created_at: string;
+}
+export interface KiResponse {
+    total: number;
+    displayed: number;
+    knowledge_units: KnowledgeUnit[];
+    checked_at: string;
+}
+export type WorkflowStageId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
+export type StageStatus = 'RUNNING' | 'COMPLETED' | 'SKIPPED' | 'FAILED' | 'BLOCKED' | 'REUSED';
+export interface StageTraceEntry {
+    stage: WorkflowStageId;
+    name: string;
+    owner: string;
+    status: StageStatus;
+    started_at: string;
+    completed_at: string;
+    detail?: Record<string, unknown>;
+    error?: string;
+}
+export type DecisionOriginEngine = '01_SECURITY' | '02_LEDGER' | '05_PARTICIPATION' | '06_UTE' | '07_SOURCES' | '08_EVIDENCE' | '09_VERIFICATION' | '10_PROJECTION' | '12_GATEWAY' | '13_GRAPH' | 'AI_RUNTIME' | 'OPS';
+export type DecisionLevel = 'INFORMATION' | 'WARNING' | 'ADMISSION_HOLD' | 'QUARANTINE' | 'SYSTEM_FAILURE' | 'PROVIDER_FAILURE' | 'CONSTITUTIONAL_CONFLICT';
+export type DecisionOutcome = 'SUCCESS' | 'ADMITTED' | 'DUPLICATE' | 'REJECTED' | 'QUARANTINED' | 'SUPERSEDED' | 'FAILED' | 'BLOCKED';
+export interface DecisionDiagnostics {
+    origin: {
+        engine: DecisionOriginEngine;
+        subsystem: string;
+        component: string;
+    };
+    provider?: {
+        id: string;
+        model: string | null;
+        latency_ms: number | null;
+    } | null;
+    classifier_ran?: boolean;
+    fell_back?: boolean;
+    attempts?: string[];
+    reasoning?: string;
+    sample_chars?: number;
+    exception?: {
+        name: string;
+        message: string;
+        stack_hash?: string;
+    } | null;
+}
+export interface ConstitutionalDecision {
+    outcome: DecisionOutcome;
+    level: DecisionLevel;
+    reason: string;
+    explanation: string;
+    action_required: string;
+    confidence: number;
+    diagnostics: DecisionDiagnostics;
+    decided_at: string;
+}
+export interface ClassificationOperatorView {
+    provider: string;
+    model: string | null;
+    classification: string;
+    confidence: number;
+    in_scope: boolean;
+    reasoning: string;
+    classifier_ran: boolean;
+    fell_back: boolean;
+    sample_chars: number;
+    latency_ms: number | null;
+    attempts: string[];
+    admission_decision: string;
+    admission_reasons: string[];
+    headline: string;
+}
+export interface OperatorAdmitItemResult {
+    filename: string;
+    sha256: string;
+    source_artifact_id: string | null;
+    cas_locator: string | null;
+    duplicate: boolean;
+    admission_decision?: 'ADMITTED' | 'REJECTED' | 'DUPLICATE' | 'QUARANTINED' | 'SUPERSEDED';
+    /** @deprecated use decision.reason + decision.explanation instead */
+    admission_decision_reason?: string | null;
+    duplicate_of_source_artifact_id?: string | null;
+    stage_trace?: StageTraceEntry[];
+    /** Single canonical decision — the only source of truth for outcome/error. */
+    decision?: ConstitutionalDecision | null;
+    /** @deprecated use decision.diagnostics instead */
+    classification_summary?: ClassificationOperatorView | null;
+    error?: string;
+}
+export type OperatorAdmitProgressEvent = {
+    type: 'file_started';
+    index: number;
+    total: number;
+    filename: string;
+} | {
+    type: 'stage';
+    index: number;
+    total: number;
+    filename: string;
+    entry: StageTraceEntry;
+} | {
+    type: 'file_result';
+    index: number;
+    total: number;
+    filename: string;
+    result: OperatorAdmitItemResult;
+};
 //# sourceMappingURL=types.d.ts.map
