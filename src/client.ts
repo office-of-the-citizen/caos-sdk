@@ -255,6 +255,15 @@ export class CaosClient {
     return res.data;
   }
 
+  /**
+   * Execution state from Module 04 — the single execution authority.
+   * Runs, schedules, and per-process health in one call.
+   */
+  async getControlExecution(): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/execution');
+    return res.data;
+  }
+
   async getControlSources(): Promise<any> {
     const res = await this.http.get<any>('/api/ops/control/sources');
     return res.data;

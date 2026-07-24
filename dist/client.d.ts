@@ -93,6 +93,11 @@ export declare class CaosClient {
     getControlGovernanceReviews(): Promise<any>;
     recordGovernanceReviewDecision(object_id: string, decision: 'RETAIN' | 'REPLACE' | 'RETIRE', reason: string): Promise<any>;
     syncSourceLibrary(reason: string, dry_run?: boolean): Promise<any>;
+    /**
+     * Execution state from Module 04 — the single execution authority.
+     * Runs, schedules, and per-process health in one call.
+     */
+    getControlExecution(): Promise<any>;
     getControlSources(): Promise<any>;
     getControlKi(params?: {
         predicate?: string;

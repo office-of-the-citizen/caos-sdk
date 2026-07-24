@@ -182,6 +182,14 @@ export class CaosClient {
         const res = await this.http.post('/api/ops/control/admission/sync', { reason, dry_run });
         return res.data;
     }
+    /**
+     * Execution state from Module 04 — the single execution authority.
+     * Runs, schedules, and per-process health in one call.
+     */
+    async getControlExecution() {
+        const res = await this.http.get('/api/ops/control/execution');
+        return res.data;
+    }
     async getControlSources() {
         const res = await this.http.get('/api/ops/control/sources');
         return res.data;
