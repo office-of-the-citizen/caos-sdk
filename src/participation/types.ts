@@ -316,25 +316,48 @@ export interface ClassificationOperatorView {
   headline: string;
 }
 
+/**
+ * One file's DISPATCH outcome — what was enqueued, not what was decided.
+ *
+ * Founder Directive 2026-07-27 made admission durable: the Control Room hands
+ * files to a Temporal workflow and returns immediately, so the decision fields
+ * this used to carry (source_artifact_id, cas_locator, admission_decision,
+ * stage_trace, classification_summary) no longer exist at this point in time.
+ * Declaring them here would make the SDK state an outcome no stage has reached
+ * — the client would type-check against a contract the OS does not honour.
+ *
+ * Read the decision from `GET /api/sources/admissions/{workflow_id}`.
+ */
 export interface OperatorAdmitItemResult {
   filename: string;
   sha256: string;
-  source_artifact_id: string | null;
-  cas_locator: string | null;
+  /** Durable handle to poll for the decision. Null when dispatch itself failed. */
+  workflow_id: string | null;
+  artifact_hash: string | null;
+  /** The bytes were already in custody — not a judgement about the content. */
   duplicate: boolean;
-  admission_decision?: 'ADMITTED' | 'REJECTED' | 'DUPLICATE' | 'QUARANTINED' | 'SUPERSEDED';
-  /** @deprecated use decision.reason + decision.explanation instead */
-  admission_decision_reason?: string | null;
-  duplicate_of_source_artifact_id?: string | null;
-  stage_trace?: StageTraceEntry[];
-  /** Single canonical decision — the only source of truth for outcome/error. */
-  decision?: ConstitutionalDecision | null;
-  /** @deprecated use decision.diagnostics instead */
-  classification_summary?: ClassificationOperatorView | null;
+  mode: 'temporal' | 'in_process' | null;
   error?: string;
 }
 
+/**
+ * Progress while DISPATCHING. The `stage` variant is gone: stages now run
+ * inside the workflow, after this stream has closed, so no stage event can
+ * arrive here. A client rendering per-stage progress from this stream would
+ * wait forever.
+ */
 export type OperatorAdmitProgressEvent =
   | { type: 'file_started'; index: number; total: number; filename: string }
-  | { type: 'stage'; index: number; total: number; filename: string; entry: StageTraceEntry }
   | { type: 'file_result'; index: number; total: number; filename: string; result: OperatorAdmitItemResult };
+
+/** Status of one durable admission, from GET /api/sources/admissions/{id}. */
+export interface AdmissionStatus {
+  workflow_id: string;
+  artifact_hash: string;
+  /** 'PENDING' until a stage has actually decided. Never read it as a decision. */
+  admission_decision: 'PENDING' | 'ADMITTED' | 'REJECTED' | 'DUPLICATE' | 'QUARANTINED' | 'SUPERSEDED';
+  workflow_state: string | null;
+  stages: unknown[];
+  /** Execution truth from Temporal. Null when Temporal is unreachable. */
+  execution: { status: string; run_id: string; type: string } | null;
+}

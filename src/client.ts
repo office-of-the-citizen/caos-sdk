@@ -90,8 +90,8 @@ export class CaosClient {
   }
 
   /**
-   * Resolve any identifier (CRN, external code, slug) to its Constitutional
-   * Resource Name via the Identity Service crosswalk.
+   * Resolve any identifier (CAOS Identifier, external code, slug) to its
+   * CAOS Identifier via the Identity Service crosswalk.
    */
   async resolve(id: string): Promise<{
     input: string;
@@ -109,12 +109,12 @@ export class CaosClient {
   }
 
   /**
-   * Resolve a CRN to its governed element — the full data, visibility class,
+   * Resolve a CAOS Identifier to its governed element — the full data, visibility class,
    * and ledger watermark. Calls the /resolve/:crn gateway endpoint.
    *
    * This is distinct from resolve(id) which performs identity resolution
-   * (any identifier → CRN). resolveCRN performs element resolution
-   * (CRN → governed element).
+   * (any identifier → CAOS Identifier). resolveCRN performs element resolution
+   * (CAOS Identifier → governed element).
    */
   async resolveCRN(crn: string): Promise<ResolvedElement> {
     const res = await this.http.get<{ data: ResolvedElement }>(
@@ -192,6 +192,119 @@ export class CaosClient {
 
   async resolveDecisionItem(id: number, decision: 'APPROVED' | 'REJECTED', note?: string): Promise<any> {
     const res = await this.http.post<any>(`/api/ops/workroom/items/${id}/resolve`, { decision, note });
+    return res.data;
+  }
+
+  // 3b. Extraction Policy — the Source page auto-extract toggle.
+  //
+  // Founder Constitutional Override §8: the policy lives on the Source page
+  // only. There is no global-settings equivalent, and no global default may
+  // silently override a per-source value.
+  async getExtractionPolicy(libraryEntryId: string): Promise<{
+    library_entry_id: string;
+    extraction_policy: string;
+    /** True only when an operator has actually chosen a policy for this source. */
+    explicitly_set: boolean;
+    auto_extract: boolean;
+    descriptions: Record<string, string>;
+    history: Array<Record<string, unknown>>;
+  }> {
+    const res = await this.http.get<any>(
+      `/api/ops/control/workroom/extraction-policy/${encodeURIComponent(libraryEntryId)}`
+    );
+    return res.data;
+  }
+
+  async setExtractionPolicy(
+    libraryEntryId: string,
+    policy: string,
+    setBy: string,
+    reason?: string
+  ): Promise<{
+    library_entry_id: string;
+    extraction_policy: string;
+    auto_extract: boolean;
+    explicitly_set: boolean;
+  }> {
+    const res = await this.http.put<any>(
+      `/api/ops/control/workroom/extraction-policy/${encodeURIComponent(libraryEntryId)}`,
+      { policy, set_by: setBy, reason: reason ?? null }
+    );
+    return res.data;
+  }
+
+  /**
+   * Convenience over setExtractionPolicy for the two-state toggle.
+   * ON_ADMISSION when enabled; MANUAL when not — MANUAL routes the admitted
+   * document to the Knowledge Workroom rather than dropping it.
+   */
+  async setAutoExtract(
+    libraryEntryId: string,
+    enabled: boolean,
+    setBy: string
+  ): Promise<{ extraction_policy: string; auto_extract: boolean }> {
+    return this.setExtractionPolicy(
+      libraryEntryId,
+      enabled ? 'ON_ADMISSION' : 'MANUAL',
+      setBy,
+      enabled
+        ? 'operator enabled automatic extraction on admission'
+        : 'operator deferred extraction to the Knowledge Workroom'
+    );
+  }
+
+  // 3c. Knowledge Workroom (extraction pipeline)
+  async getKnowledgeWorkroomPending(): Promise<{ items: any[]; count: number }> {
+    const res = await this.http.get<{ items: any[]; count: number }>('/api/ops/control/workroom/pending');
+    return res.data;
+  }
+
+  async getKnowledgeWorkroomConstructing(): Promise<{ items: any[]; count: number }> {
+    const res = await this.http.get<{ items: any[]; count: number }>('/api/ops/control/workroom/constructing');
+    return res.data;
+  }
+
+  async getKnowledgeWorkroomConstructed(): Promise<{ items: any[]; count: number }> {
+    const res = await this.http.get<{ items: any[]; count: number }>('/api/ops/control/workroom/constructed');
+    return res.data;
+  }
+
+  async triggerExtraction(admissionId: string, triggeredBy: string, extractorVersion?: string): Promise<any> {
+    const res = await this.http.post<any>('/api/ops/control/workroom/extract-now', {
+      admission_id: admissionId,
+      triggered_by: triggeredBy,
+      extractor_version: extractorVersion ?? null,
+    });
+    return res.data;
+  }
+
+  async scheduleExtraction(admissionId: string, scheduledFor: string, triggeredBy: string, extractorVersion?: string): Promise<any> {
+    const res = await this.http.post<any>('/api/ops/control/workroom/schedule', {
+      admission_id: admissionId,
+      scheduled_for: scheduledFor,
+      triggered_by: triggeredBy,
+      extractor_version: extractorVersion ?? null,
+    });
+    return res.data;
+  }
+
+  async batchExtract(admissionIds: string[], triggeredBy: string, extractorVersion?: string, concurrency?: number): Promise<any> {
+    const res = await this.http.post<any>('/api/ops/control/workroom/batch-extract', {
+      admission_ids: admissionIds,
+      triggered_by: triggeredBy,
+      extractor_version: extractorVersion ?? null,
+      concurrency: concurrency ?? 5,
+    });
+    return res.data;
+  }
+
+  async rerunExtraction(jobId: string, triggeredBy: string, extractorVersion?: string, stages?: string[]): Promise<any> {
+    const res = await this.http.post<any>('/api/ops/control/workroom/rerun', {
+      job_id: jobId,
+      triggered_by: triggeredBy,
+      extractor_version: extractorVersion ?? null,
+      stages: stages ?? undefined,
+    });
     return res.data;
   }
 
@@ -367,7 +480,11 @@ export class CaosClient {
    * Each parsed line is handed to onLine as it arrives so surfaces can render
    * per-file stage progress. Uses fetch because axios buffers streams.
    */
-  async admitSourcesStream(input: FormData, onLine: (line: unknown) => void): Promise<void> {
+  async admitSourcesStream(
+    input: FormData,
+    onLine: (line: unknown) => void,
+    signal?: AbortSignal,
+  ): Promise<void> {
     const base = (this.http.defaults.baseURL || '').replace(/\/$/, '');
     const headers = new Headers();
     const h = this.http.defaults.headers as Record<string, unknown>;
@@ -382,6 +499,7 @@ export class CaosClient {
       body: input,
       headers,
       credentials: 'include',
+      signal,
     });
     if (!res.body) {
       const data = await res.json().catch(() => null);

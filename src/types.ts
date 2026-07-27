@@ -2,20 +2,18 @@
  * Shared Type Definitions and Core Contracts for CAOS SDK.
  */
 
-// === Constitutional Resource Name (CRN) ===
+// === CAOS Identifier (internal symbol: CRN) ===
 // The unified identity grammar of the Knowledge Index.
-// Grammar: crn:<kind>:<designator>
-// The kind determines the stratum level (S0–S5); the designator is the
-// kind-specific unique identifier.
+// Canonical grammar: caos:<stratum>:<kind>:<designator>
+// The <stratum> segment names the stratum directly; the <kind> segment
+// provides sub-classification; the <designator> is the unique identifier.
+// Founder Decision 01: the `caos:` namespace is the sole scheme; `crn:` is rejected.
 
-export type CRNStratum = 's0' | 's1' | 's2' | 's3' | 's4' | 's5';
-
-export type CRNKind =
+export type CRNStratum =
   | 'artifact'
   | 'structure'
   | 'entity'
   | 'person'
-  | 'organisation'
   | 'ku'
   | 'evidence'
   | 'claim'
@@ -24,14 +22,18 @@ export type CRNKind =
   | 'absence'
   | 'answer';
 
+/** Sub-classification within a stratum (e.g. "lga", "pdf", "mandate"). */
+export type CRNKind = string;
+
 export interface CRN {
   raw: string;
   stratum: CRNStratum;
   kind: CRNKind;
   designator: string;
+  level: number;
 }
 
-/** The result of resolving a CRN to its governed element. */
+/** The result of resolving a CAOS Identifier to its governed element. */
 export interface ResolvedElement {
   crn: string;
   stratum: CRNStratum;
