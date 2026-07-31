@@ -548,6 +548,119 @@ export class CaosClient {
     return res.data;
   }
 
+  // ── CANONICAL ADMISSION ENDPOINTS (Phase 5) ─────────────────────────────
+
+  /**
+   * Canonical single-file upload — starts SourceAdmissionWorkflow.
+   * The extraction decision is part of the workflow input.
+   */
+  async uploadSource(
+    file: { filename: string; bytes: Uint8Array; media_type?: string },
+    opts: { auto_extract: boolean }
+  ): Promise<{
+    artifact_hash: string;
+    workflow_id: string;
+    mode: string;
+    duplicate: boolean;
+    admission_decision: string;
+    auto_extract: boolean;
+    status_href: string;
+  }> {
+    const form = new FormData();
+    form.append('file', new Blob([file.bytes as unknown as BlobPart]), file.filename);
+    form.set('filename', file.filename);
+    if (file.media_type) form.set('media_type', file.media_type);
+    form.set('auto_extract', String(opts.auto_extract));
+
+    const res = await this.http.post<any>('/api/v2/sources/upload', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  }
+
+  /**
+   * Canonical batch upload — starts BatchAdmissionWorkflow.
+   * Extraction is always automatic for batches.
+   */
+  async batchUploadSources(
+    files: Array<{ filename: string; bytes: Uint8Array; media_type?: string }>,
+    batchName: string
+  ): Promise<{
+    workflow_id: string;
+    batch_name: string;
+    total_documents: number;
+    mode: string;
+    status_href: string;
+    signal_href: string;
+  }> {
+    const form = new FormData();
+    for (const f of files) {
+      form.append('files', new Blob([f.bytes as unknown as BlobPart]), f.filename);
+    }
+    form.set('batch_name', batchName);
+
+    const res = await this.http.post<any>('/api/v2/sources/batch-upload', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  }
+
+  /**
+   * Query canonical admission workflow status via Temporal query.
+   */
+  async getAdmissionWorkflowStatus(workflowId: string): Promise<{
+    workflow_id: string;
+    phase: string;
+    artifact_hash: string | null;
+    admission_status: string | null;
+    extraction_status: string | null;
+    error: string | null;
+    interpretation_workflow_id: string | null;
+    execution: { status: string; run_id: string } | null;
+  }> {
+    const res = await this.http.get<any>(`/api/v2/sources/admissions/${encodeURIComponent(workflowId)}`);
+    return res.data;
+  }
+
+  /**
+   * Query batch workflow status via Temporal query.
+   */
+  async getBatchWorkflowStatus(workflowId: string): Promise<{
+    workflow_id: string;
+    phase: string;
+    batch_name: string;
+    total: number;
+    processed: number;
+    completed: number;
+    failed: number;
+    stopped: number;
+    current_index: number;
+    recent_results: Array<{
+      index: number;
+      filename: string;
+      status: string;
+      error: string | null;
+    }>;
+    execution: { status: string; run_id: string } | null;
+  }> {
+    const res = await this.http.get<any>(`/api/v2/sources/batch/${encodeURIComponent(workflowId)}`);
+    return res.data;
+  }
+
+  /**
+   * Send a signal to a batch workflow (pause/resume/stop).
+   */
+  async signalBatchWorkflow(
+    workflowId: string,
+    signal: 'pause' | 'resume' | 'stop'
+  ): Promise<{ ok: boolean; workflow_id: string; signal: string }> {
+    const res = await this.http.post<any>(
+      `/api/v2/sources/batch/${encodeURIComponent(workflowId)}/signal`,
+      { signal }
+    );
+    return res.data;
+  }
+
   async getEngineExecutions(params?: { plan?: string; status?: string; limit?: number }): Promise<any> {
     const res = await this.http.get<any>('/api/ops/control/engine/executions', { params });
     return res.data;
@@ -610,22 +723,8 @@ export class CaosClient {
     return res.data;
   }
 
-  async uploadSource(input: FormData | { filename: string; bytes_base64: string; media_type?: string }): Promise<any> {
-    const res = await this.http.post<any>('/api/v1/sources/upload', input, {
-      headers: input instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
-      validateStatus: (s) => s < 500,
-    });
-    if (res.status >= 400) {
-      const err = new Error(res.data?.error || `upload failed (${res.status})`) as Error & {
-        status?: number;
-        data?: unknown;
-      };
-      err.status = res.status;
-      err.data = res.data;
-      throw err;
-    }
-    return res.data;
-  }
+  // uploadSourceV1() — DELETED (2026-07-31). Use uploadSource() which starts
+  // SourceAdmissionWorkflow via POST /api/v2/sources/upload.
 
   /** Replace session token on an existing client (browser cookie refresh). */
   withSession(sessionToken: string | undefined): CaosClient {

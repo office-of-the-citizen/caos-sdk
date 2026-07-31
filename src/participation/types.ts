@@ -237,7 +237,7 @@ export type WorkflowStageId =
   | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
 
 export type StageStatus =
-  | 'RUNNING' | 'COMPLETED' | 'SKIPPED' | 'FAILED' | 'BLOCKED' | 'REUSED';
+  | 'NOT_STARTED' | 'RUNNING' | 'COMPLETED' | 'SKIPPED' | 'FAILED' | 'BLOCKED' | 'REUSED' | 'WAITING';
 
 export interface StageTraceEntry {
   stage: WorkflowStageId;
@@ -357,7 +357,7 @@ export interface AdmissionStatus {
   /** 'PENDING' until a stage has actually decided. Never read it as a decision. */
   admission_decision: 'PENDING' | 'ADMITTED' | 'REJECTED' | 'DUPLICATE' | 'QUARANTINED' | 'SUPERSEDED';
   workflow_state: string | null;
-  stages: unknown[];
+  stages: StageTraceEntry[];
   /** Execution truth from Temporal. Null when Temporal is unreachable. */
   execution: { status: string; run_id: string; type: string } | null;
 }

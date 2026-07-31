@@ -1,15 +1,17 @@
 /**
  * Shared Type Definitions and Core Contracts for CAOS SDK.
  */
-export type CRNStratum = 's0' | 's1' | 's2' | 's3' | 's4' | 's5';
-export type CRNKind = 'artifact' | 'structure' | 'entity' | 'person' | 'organisation' | 'ku' | 'evidence' | 'claim' | 'assertion' | 'episode' | 'absence' | 'answer';
+export type CRNStratum = 'artifact' | 'structure' | 'entity' | 'person' | 'ku' | 'evidence' | 'claim' | 'assertion' | 'episode' | 'absence' | 'answer';
+/** Sub-classification within a stratum (e.g. "lga", "pdf", "mandate"). */
+export type CRNKind = string;
 export interface CRN {
     raw: string;
     stratum: CRNStratum;
     kind: CRNKind;
     designator: string;
+    level: number;
 }
-/** The result of resolving a CRN to its governed element. */
+/** The result of resolving a CAOS Identifier to its governed element. */
 export interface ResolvedElement {
     crn: string;
     stratum: CRNStratum;

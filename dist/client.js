@@ -65,8 +65,8 @@ export class CaosClient {
         return res.data.data;
     }
     /**
-     * Resolve any identifier (CRN, external code, slug) to its Constitutional
-     * Resource Name via the Identity Service crosswalk.
+     * Resolve any identifier (CAOS Identifier, external code, slug) to its
+     * CAOS Identifier via the Identity Service crosswalk.
      */
     async resolve(id) {
         const res = await this.http.get('/api/v1/public/resolve', {
@@ -75,12 +75,12 @@ export class CaosClient {
         return res.data.data;
     }
     /**
-     * Resolve a CRN to its governed element — the full data, visibility class,
+     * Resolve a CAOS Identifier to its governed element — the full data, visibility class,
      * and ledger watermark. Calls the /resolve/:crn gateway endpoint.
      *
      * This is distinct from resolve(id) which performs identity resolution
-     * (any identifier → CRN). resolveCRN performs element resolution
-     * (CRN → governed element).
+     * (any identifier → CAOS Identifier). resolveCRN performs element resolution
+     * (CAOS Identifier → governed element).
      */
     async resolveCRN(crn) {
         const res = await this.http.get(`/resolve/${encodeURIComponent(crn)}`);
@@ -139,6 +139,77 @@ export class CaosClient {
     }
     async resolveDecisionItem(id, decision, note) {
         const res = await this.http.post(`/api/ops/workroom/items/${id}/resolve`, { decision, note });
+        return res.data;
+    }
+    // 3b. Extraction Policy — the Source page auto-extract toggle.
+    //
+    // Founder Constitutional Override §8: the policy lives on the Source page
+    // only. There is no global-settings equivalent, and no global default may
+    // silently override a per-source value.
+    async getExtractionPolicy(libraryEntryId) {
+        const res = await this.http.get(`/api/ops/control/workroom/extraction-policy/${encodeURIComponent(libraryEntryId)}`);
+        return res.data;
+    }
+    async setExtractionPolicy(libraryEntryId, policy, setBy, reason) {
+        const res = await this.http.put(`/api/ops/control/workroom/extraction-policy/${encodeURIComponent(libraryEntryId)}`, { policy, set_by: setBy, reason: reason ?? null });
+        return res.data;
+    }
+    /**
+     * Convenience over setExtractionPolicy for the two-state toggle.
+     * ON_ADMISSION when enabled; MANUAL when not — MANUAL routes the admitted
+     * document to the Knowledge Workroom rather than dropping it.
+     */
+    async setAutoExtract(libraryEntryId, enabled, setBy) {
+        return this.setExtractionPolicy(libraryEntryId, enabled ? 'ON_ADMISSION' : 'MANUAL', setBy, enabled
+            ? 'operator enabled automatic extraction on admission'
+            : 'operator deferred extraction to the Knowledge Workroom');
+    }
+    // 3c. Knowledge Workroom (extraction pipeline)
+    async getKnowledgeWorkroomPending() {
+        const res = await this.http.get('/api/ops/control/workroom/pending');
+        return res.data;
+    }
+    async getKnowledgeWorkroomConstructing() {
+        const res = await this.http.get('/api/ops/control/workroom/constructing');
+        return res.data;
+    }
+    async getKnowledgeWorkroomConstructed() {
+        const res = await this.http.get('/api/ops/control/workroom/constructed');
+        return res.data;
+    }
+    async triggerExtraction(admissionId, triggeredBy, extractorVersion) {
+        const res = await this.http.post('/api/ops/control/workroom/extract-now', {
+            admission_id: admissionId,
+            triggered_by: triggeredBy,
+            extractor_version: extractorVersion ?? null,
+        });
+        return res.data;
+    }
+    async scheduleExtraction(admissionId, scheduledFor, triggeredBy, extractorVersion) {
+        const res = await this.http.post('/api/ops/control/workroom/schedule', {
+            admission_id: admissionId,
+            scheduled_for: scheduledFor,
+            triggered_by: triggeredBy,
+            extractor_version: extractorVersion ?? null,
+        });
+        return res.data;
+    }
+    async batchExtract(admissionIds, triggeredBy, extractorVersion, concurrency) {
+        const res = await this.http.post('/api/ops/control/workroom/batch-extract', {
+            admission_ids: admissionIds,
+            triggered_by: triggeredBy,
+            extractor_version: extractorVersion ?? null,
+            concurrency: concurrency ?? 5,
+        });
+        return res.data;
+    }
+    async rerunExtraction(jobId, triggeredBy, extractorVersion, stages) {
+        const res = await this.http.post('/api/ops/control/workroom/rerun', {
+            job_id: jobId,
+            triggered_by: triggeredBy,
+            extractor_version: extractorVersion ?? null,
+            stages: stages ?? undefined,
+        });
         return res.data;
     }
     // 4. Control Room Dashboards
@@ -263,7 +334,7 @@ export class CaosClient {
      * Each parsed line is handed to onLine as it arrives so surfaces can render
      * per-file stage progress. Uses fetch because axios buffers streams.
      */
-    async admitSourcesStream(input, onLine) {
+    async admitSourcesStream(input, onLine, signal) {
         const base = (this.http.defaults.baseURL || '').replace(/\/$/, '');
         const headers = new Headers();
         const h = this.http.defaults.headers;
@@ -277,6 +348,7 @@ export class CaosClient {
             body: input,
             headers,
             credentials: 'include',
+            signal,
         });
         if (!res.body) {
             const data = await res.json().catch(() => null);
@@ -327,6 +399,59 @@ export class CaosClient {
         const res = await this.http.get('/api/ops/control/engine/plans', { params });
         return res.data;
     }
+    // ── CANONICAL ADMISSION ENDPOINTS (Phase 5) ─────────────────────────────
+    /**
+     * Canonical single-file upload — starts SourceAdmissionWorkflow.
+     * The extraction decision is part of the workflow input.
+     */
+    async uploadSource(file, opts) {
+        const form = new FormData();
+        form.append('file', new Blob([file.bytes]), file.filename);
+        form.set('filename', file.filename);
+        if (file.media_type)
+            form.set('media_type', file.media_type);
+        form.set('auto_extract', String(opts.auto_extract));
+        const res = await this.http.post('/api/v2/sources/upload', form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return res.data;
+    }
+    /**
+     * Canonical batch upload — starts BatchAdmissionWorkflow.
+     * Extraction is always automatic for batches.
+     */
+    async batchUploadSources(files, batchName) {
+        const form = new FormData();
+        for (const f of files) {
+            form.append('files', new Blob([f.bytes]), f.filename);
+        }
+        form.set('batch_name', batchName);
+        const res = await this.http.post('/api/v2/sources/batch-upload', form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return res.data;
+    }
+    /**
+     * Query canonical admission workflow status via Temporal query.
+     */
+    async getAdmissionWorkflowStatus(workflowId) {
+        const res = await this.http.get(`/api/v2/sources/admissions/${encodeURIComponent(workflowId)}`);
+        return res.data;
+    }
+    /**
+     * Query batch workflow status via Temporal query.
+     */
+    async getBatchWorkflowStatus(workflowId) {
+        const res = await this.http.get(`/api/v2/sources/batch/${encodeURIComponent(workflowId)}`);
+        return res.data;
+    }
+    /**
+     * Send a signal to a batch workflow (pause/resume/stop).
+     */
+    async signalBatchWorkflow(workflowId, signal) {
+        const res = await this.http.post(`/api/v2/sources/batch/${encodeURIComponent(workflowId)}/signal`, { signal });
+        return res.data;
+    }
     async getEngineExecutions(params) {
         const res = await this.http.get('/api/ops/control/engine/executions', { params });
         return res.data;
@@ -373,7 +498,11 @@ export class CaosClient {
         const res = await this.http.get(`/api/v1/governed/claims/${encodeURIComponent(claimId)}`);
         return res.data;
     }
-    async uploadSource(input) {
+    /**
+     * @deprecated Use uploadSource() which starts SourceAdmissionWorkflow.
+     * Legacy single-file upload via /api/v1/sources/upload.
+     */
+    async uploadSourceV1(input) {
         const res = await this.http.post('/api/v1/sources/upload', input, {
             headers: input instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
             validateStatus: (s) => s < 500,
