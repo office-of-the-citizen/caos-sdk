@@ -623,6 +623,35 @@ export class CaosClient {
   }
 
   /**
+   * Read the full admission journey — the 14-stage constitutional checkpoint
+   * record. Each stage has a lifecycle (NOT_STARTED, RUNNING, COMPLETED,
+   * SKIPPED, FAILED, WAITING) and timing data.
+   */
+  async getAdmissionJourney(workflowId: string): Promise<{
+    admission_id: string;
+    workflow_state: string;
+    created_at: string;
+    updated_at: string;
+    stages: Array<{
+      stage: number;
+      name: string;
+      owner: string;
+      status: string;
+      started_at: string;
+      completed_at: string | null;
+      duration_ms: number | null;
+      detail: Record<string, unknown> | null;
+      error: string | null;
+    }>;
+    admission_status: string | null;
+    artifact_hash: string | null;
+    source_kind: string | null;
+  }> {
+    const res = await this.http.get<any>(`/api/v2/sources/admissions/${encodeURIComponent(workflowId)}/journey`);
+    return res.data;
+  }
+
+  /**
    * Query batch workflow status via Temporal query.
    */
   async getBatchWorkflowStatus(workflowId: string): Promise<{
