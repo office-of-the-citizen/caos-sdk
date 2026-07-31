@@ -141,77 +141,16 @@ export class CaosClient {
         const res = await this.http.post(`/api/ops/workroom/items/${id}/resolve`, { decision, note });
         return res.data;
     }
-    // 3b. Extraction Policy — the Source page auto-extract toggle.
+    // 3b/3c. Extraction policy + Knowledge Workroom — DELETED (2026-07-31).
     //
-    // Founder Constitutional Override §8: the policy lives on the Source page
-    // only. There is no global-settings equivalent, and no global default may
-    // silently override a per-source value.
-    async getExtractionPolicy(libraryEntryId) {
-        const res = await this.http.get(`/api/ops/control/workroom/extraction-policy/${encodeURIComponent(libraryEntryId)}`);
-        return res.data;
-    }
-    async setExtractionPolicy(libraryEntryId, policy, setBy, reason) {
-        const res = await this.http.put(`/api/ops/control/workroom/extraction-policy/${encodeURIComponent(libraryEntryId)}`, { policy, set_by: setBy, reason: reason ?? null });
-        return res.data;
-    }
-    /**
-     * Convenience over setExtractionPolicy for the two-state toggle.
-     * ON_ADMISSION when enabled; MANUAL when not — MANUAL routes the admitted
-     * document to the Knowledge Workroom rather than dropping it.
-     */
-    async setAutoExtract(libraryEntryId, enabled, setBy) {
-        return this.setExtractionPolicy(libraryEntryId, enabled ? 'ON_ADMISSION' : 'MANUAL', setBy, enabled
-            ? 'operator enabled automatic extraction on admission'
-            : 'operator deferred extraction to the Knowledge Workroom');
-    }
-    // 3c. Knowledge Workroom (extraction pipeline)
-    async getKnowledgeWorkroomPending() {
-        const res = await this.http.get('/api/ops/control/workroom/pending');
-        return res.data;
-    }
-    async getKnowledgeWorkroomConstructing() {
-        const res = await this.http.get('/api/ops/control/workroom/constructing');
-        return res.data;
-    }
-    async getKnowledgeWorkroomConstructed() {
-        const res = await this.http.get('/api/ops/control/workroom/constructed');
-        return res.data;
-    }
-    async triggerExtraction(admissionId, triggeredBy, extractorVersion) {
-        const res = await this.http.post('/api/ops/control/workroom/extract-now', {
-            admission_id: admissionId,
-            triggered_by: triggeredBy,
-            extractor_version: extractorVersion ?? null,
-        });
-        return res.data;
-    }
-    async scheduleExtraction(admissionId, scheduledFor, triggeredBy, extractorVersion) {
-        const res = await this.http.post('/api/ops/control/workroom/schedule', {
-            admission_id: admissionId,
-            scheduled_for: scheduledFor,
-            triggered_by: triggeredBy,
-            extractor_version: extractorVersion ?? null,
-        });
-        return res.data;
-    }
-    async batchExtract(admissionIds, triggeredBy, extractorVersion, concurrency) {
-        const res = await this.http.post('/api/ops/control/workroom/batch-extract', {
-            admission_ids: admissionIds,
-            triggered_by: triggeredBy,
-            extractor_version: extractorVersion ?? null,
-            concurrency: concurrency ?? 5,
-        });
-        return res.data;
-    }
-    async rerunExtraction(jobId, triggeredBy, extractorVersion, stages) {
-        const res = await this.http.post('/api/ops/control/workroom/rerun', {
-            job_id: jobId,
-            triggered_by: triggeredBy,
-            extractor_version: extractorVersion ?? null,
-            stages: stages ?? undefined,
-        });
-        return res.data;
-    }
+    // getExtractionPolicy/setExtractionPolicy drove a stored per-source policy
+    // that decided extraction behind the operator's back. triggerExtraction,
+    // scheduleExtraction, batchExtraction and rerunExtraction drove a second,
+    // non-Temporal extraction orchestrator.
+    //
+    // There is now exactly one rule: a single upload extracts if the operator
+    // asked it to (`uploadSource({ auto_extract })`); a batch always extracts.
+    // Nothing else decides. Retry a failed document with retryAdmission().
     // 4. Control Room Dashboards
     async getControlHealth() {
         const res = await this.http.get('/api/ops/control/health');
@@ -298,102 +237,11 @@ export class CaosClient {
         }
         return res.data;
     }
-    async getControlAdmission() {
-        const res = await this.http.get('/api/ops/control/admission');
-        return res.data;
-    }
-    /**
-     * Operator admit. Prefer FormData in browsers (files field).
-     * dry_run returns JSON; live admit may return NDJSON text for progress.
-     */
-    async admitSources(input, options) {
-        const dry_run = Boolean(options?.dry_run);
-        const res = await this.http.post('/api/ops/control/admission', input, {
-            params: dry_run ? { dry_run: '1' } : undefined,
-            headers: input instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
-            validateStatus: (s) => s < 500,
-            // Live admit streams NDJSON; axios buffers the full body as text/json.
-            responseType: dry_run ? 'json' : 'text',
-            transformResponse: dry_run
-                ? undefined
-                : [(data) => data],
-        });
-        if (res.status >= 400) {
-            const payload = typeof res.data === 'string' ? safeJson(res.data) : res.data;
-            const err = new Error(payload?.error || `admit failed (${res.status})`);
-            err.status = res.status;
-            err.data = payload;
-            throw err;
-        }
-        if (dry_run)
-            return res.data;
-        return parseNdjsonAdmit(typeof res.data === 'string' ? res.data : String(res.data ?? ''));
-    }
-    /**
-     * Live operator admit with progressive NDJSON delivery (browser only).
-     * Each parsed line is handed to onLine as it arrives so surfaces can render
-     * per-file stage progress. Uses fetch because axios buffers streams.
-     */
-    async admitSourcesStream(input, onLine, signal) {
-        const base = (this.http.defaults.baseURL || '').replace(/\/$/, '');
-        const headers = new Headers();
-        const h = this.http.defaults.headers;
-        for (const key of ['x-ute-api-key', 'x-caos-session', 'Cookie']) {
-            const value = (h?.[key] ?? h?.common?.[key]);
-            if (value && key !== 'Cookie')
-                headers.set(key, value);
-        }
-        const res = await fetch(`${base}/api/ops/control/admission`, {
-            method: 'POST',
-            body: input,
-            headers,
-            credentials: 'include',
-            signal,
-        });
-        if (!res.body) {
-            const data = await res.json().catch(() => null);
-            if (!res.ok) {
-                throw new CaosError({
-                    code: `HTTP_${res.status}`,
-                    message: data?.error || res.statusText,
-                    status: res.status,
-                    data,
-                });
-            }
-            if (data)
-                onLine(data);
-            return;
-        }
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        for (;;) {
-            const { done, value } = await reader.read();
-            if (done)
-                break;
-            buffer += decoder.decode(value, { stream: true });
-            let newlineAt;
-            while ((newlineAt = buffer.indexOf('\n')) >= 0) {
-                const line = buffer.slice(0, newlineAt).trim();
-                buffer = buffer.slice(newlineAt + 1);
-                if (!line)
-                    continue;
-                try {
-                    onLine(JSON.parse(line));
-                }
-                catch {
-                    /* non-JSON keepalive lines are ignored */
-                }
-            }
-        }
-        if (!res.ok) {
-            throw new CaosError({
-                code: `HTTP_${res.status}`,
-                message: res.statusText || 'admit failed',
-                status: res.status,
-            });
-        }
-    }
+    // getControlAdmission(), admitSources(), admitSourcesStream() — DELETED
+    // (2026-07-31). They drove POST /api/ops/control/admission, an admission
+    // path that ran outside Temporal with its own NDJSON progress protocol.
+    // The route and all three methods had zero callers. Upload through
+    // uploadSource() / batchUploadSources().
     // 6. Engine 06 compiler surfaces
     async getEnginePlans(params) {
         const res = await this.http.get('/api/ops/control/engine/plans', { params });
@@ -439,10 +287,39 @@ export class CaosClient {
         return res.data;
     }
     /**
+     * Read the full admission journey — the 14-stage constitutional checkpoint
+     * record. Each stage has a lifecycle (NOT_STARTED, RUNNING, COMPLETED,
+     * SKIPPED, FAILED, WAITING) and timing data.
+     */
+    async getAdmissionJourney(workflowId) {
+        const res = await this.http.get(`/api/v2/sources/admissions/${encodeURIComponent(workflowId)}/journey`);
+        return res.data;
+    }
+    /**
      * Query batch workflow status via Temporal query.
      */
     async getBatchWorkflowStatus(workflowId) {
         const res = await this.http.get(`/api/v2/sources/batch/${encodeURIComponent(workflowId)}`);
+        return res.data;
+    }
+    /**
+     * Retry a failed admission from the Workroom.
+     *
+     * Resubmits the document into the canonical SourceAdmissionWorkflow. Set
+     * `alreadyAdmitted` when the document reached custody and only extraction
+     * failed — the workflow then resumes at extraction instead of re-admitting.
+     *
+     * `autoExtract` should be the choice recorded on the Workroom item, so the
+     * retry repeats the original request rather than inventing a new one.
+     */
+    async retryAdmission(workflowId, artifactHash, opts) {
+        const res = await this.http.post(`/api/v2/sources/admissions/${encodeURIComponent(workflowId)}/retry`, {
+            artifact_hash: artifactHash,
+            already_admitted: opts?.alreadyAdmitted === true,
+            // Omitted rather than defaulted, so the gateway's own default applies
+            // when the item predates retry-context recording.
+            ...(opts?.autoExtract === undefined ? {} : { auto_extract: opts.autoExtract }),
+        });
         return res.data;
     }
     /**
@@ -498,23 +375,8 @@ export class CaosClient {
         const res = await this.http.get(`/api/v1/governed/claims/${encodeURIComponent(claimId)}`);
         return res.data;
     }
-    /**
-     * @deprecated Use uploadSource() which starts SourceAdmissionWorkflow.
-     * Legacy single-file upload via /api/v1/sources/upload.
-     */
-    async uploadSourceV1(input) {
-        const res = await this.http.post('/api/v1/sources/upload', input, {
-            headers: input instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
-            validateStatus: (s) => s < 500,
-        });
-        if (res.status >= 400) {
-            const err = new Error(res.data?.error || `upload failed (${res.status})`);
-            err.status = res.status;
-            err.data = res.data;
-            throw err;
-        }
-        return res.data;
-    }
+    // uploadSourceV1() — DELETED (2026-07-31). Use uploadSource() which starts
+    // SourceAdmissionWorkflow via POST /api/v2/sources/upload.
     /** Replace session token on an existing client (browser cookie refresh). */
     withSession(sessionToken) {
         const baseURL = this.http.defaults.baseURL || '';
@@ -538,36 +400,4 @@ export class CaosClient {
                 : false,
         };
     }
-}
-function safeJson(text) {
-    try {
-        return JSON.parse(text);
-    }
-    catch {
-        return { error: text };
-    }
-}
-function parseNdjsonAdmit(text) {
-    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-    let final = null;
-    const progress = [];
-    for (const line of lines) {
-        try {
-            const obj = JSON.parse(line);
-            if (obj?.type === 'final')
-                final = obj.result ?? obj;
-            else if (obj?.type === 'error') {
-                const err = new Error(obj.error || 'admit failed');
-                err.data = obj;
-                throw err;
-            }
-            else
-                progress.push(obj);
-        }
-        catch (e) {
-            if (e instanceof Error && e.data)
-                throw e;
-        }
-    }
-    return final ?? { progress, raw: text };
 }

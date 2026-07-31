@@ -74,46 +74,6 @@ export declare class CaosClient {
     }>;
     getDecisionItem(id: number): Promise<DecisionItem>;
     resolveDecisionItem(id: number, decision: 'APPROVED' | 'REJECTED', note?: string): Promise<any>;
-    getExtractionPolicy(libraryEntryId: string): Promise<{
-        library_entry_id: string;
-        extraction_policy: string;
-        /** True only when an operator has actually chosen a policy for this source. */
-        explicitly_set: boolean;
-        auto_extract: boolean;
-        descriptions: Record<string, string>;
-        history: Array<Record<string, unknown>>;
-    }>;
-    setExtractionPolicy(libraryEntryId: string, policy: string, setBy: string, reason?: string): Promise<{
-        library_entry_id: string;
-        extraction_policy: string;
-        auto_extract: boolean;
-        explicitly_set: boolean;
-    }>;
-    /**
-     * Convenience over setExtractionPolicy for the two-state toggle.
-     * ON_ADMISSION when enabled; MANUAL when not — MANUAL routes the admitted
-     * document to the Knowledge Workroom rather than dropping it.
-     */
-    setAutoExtract(libraryEntryId: string, enabled: boolean, setBy: string): Promise<{
-        extraction_policy: string;
-        auto_extract: boolean;
-    }>;
-    getKnowledgeWorkroomPending(): Promise<{
-        items: any[];
-        count: number;
-    }>;
-    getKnowledgeWorkroomConstructing(): Promise<{
-        items: any[];
-        count: number;
-    }>;
-    getKnowledgeWorkroomConstructed(): Promise<{
-        items: any[];
-        count: number;
-    }>;
-    triggerExtraction(admissionId: string, triggeredBy: string, extractorVersion?: string): Promise<any>;
-    scheduleExtraction(admissionId: string, scheduledFor: string, triggeredBy: string, extractorVersion?: string): Promise<any>;
-    batchExtract(admissionIds: string[], triggeredBy: string, extractorVersion?: string, concurrency?: number): Promise<any>;
-    rerunExtraction(jobId: string, triggeredBy: string, extractorVersion?: string, stages?: string[]): Promise<any>;
     getControlHealth(): Promise<any>;
     getControlHealthLayers(): Promise<any>;
     getControlWorkers(): Promise<any>;
@@ -161,27 +121,6 @@ export declare class CaosClient {
         failure_id?: string;
         params?: Record<string, unknown>;
     }): Promise<any>;
-    getControlAdmission(): Promise<any>;
-    /**
-     * Operator admit. Prefer FormData in browsers (files field).
-     * dry_run returns JSON; live admit may return NDJSON text for progress.
-     */
-    admitSources(input: FormData | {
-        reason: string;
-        files: Array<{
-            filename: string;
-            bytes_base64: string;
-            declared_mime_type?: string | null;
-        }>;
-    }, options?: {
-        dry_run?: boolean;
-    }): Promise<any>;
-    /**
-     * Live operator admit with progressive NDJSON delivery (browser only).
-     * Each parsed line is handed to onLine as it arrives so surfaces can render
-     * per-file stage progress. Uses fetch because axios buffers streams.
-     */
-    admitSourcesStream(input: FormData, onLine: (line: unknown) => void, signal?: AbortSignal): Promise<void>;
     getEnginePlans(params?: {
         method?: string;
         eligible?: string;
@@ -239,6 +178,31 @@ export declare class CaosClient {
         } | null;
     }>;
     /**
+     * Read the full admission journey — the 14-stage constitutional checkpoint
+     * record. Each stage has a lifecycle (NOT_STARTED, RUNNING, COMPLETED,
+     * SKIPPED, FAILED, WAITING) and timing data.
+     */
+    getAdmissionJourney(workflowId: string): Promise<{
+        admission_id: string;
+        workflow_state: string;
+        created_at: string;
+        updated_at: string;
+        stages: Array<{
+            stage: number;
+            name: string;
+            owner: string;
+            status: string;
+            started_at: string;
+            completed_at: string | null;
+            duration_ms: number | null;
+            detail: Record<string, unknown> | null;
+            error: string | null;
+        }>;
+        admission_status: string | null;
+        artifact_hash: string | null;
+        source_kind: string | null;
+    }>;
+    /**
      * Query batch workflow status via Temporal query.
      */
     getBatchWorkflowStatus(workflowId: string): Promise<{
@@ -248,19 +212,49 @@ export declare class CaosClient {
         total: number;
         processed: number;
         completed: number;
+        /** Documents actually admitted to the corpus. */
+        admitted: number;
+        /** Completed with a non-ADMITTED decision — awaiting review in the Workroom. */
+        held: number;
         failed: number;
         stopped: number;
         current_index: number;
         recent_results: Array<{
             index: number;
             filename: string;
+            /** Workflow outcome: COMPLETED | FAILED | STOPPED | SKIPPED. */
             status: string;
+            /** Constitutional decision: ADMITTED | QUARANTINED | REJECTED, or null. */
+            admission_status: string | null;
+            extraction_started: boolean;
             error: string | null;
         }>;
         execution: {
             status: string;
             run_id: string;
         } | null;
+    }>;
+    /**
+     * Retry a failed admission from the Workroom.
+     *
+     * Resubmits the document into the canonical SourceAdmissionWorkflow. Set
+     * `alreadyAdmitted` when the document reached custody and only extraction
+     * failed — the workflow then resumes at extraction instead of re-admitting.
+     *
+     * `autoExtract` should be the choice recorded on the Workroom item, so the
+     * retry repeats the original request rather than inventing a new one.
+     */
+    retryAdmission(workflowId: string, artifactHash: string, opts?: {
+        alreadyAdmitted?: boolean;
+        autoExtract?: boolean;
+    }): Promise<{
+        workflow_id: string;
+        retry_of?: string;
+        artifact_hash?: string;
+        auto_extract?: boolean;
+        resumed_at?: 'admission' | 'extraction';
+        duplicate?: boolean;
+        status_href?: string;
     }>;
     /**
      * Send a signal to a batch workflow (pause/resume/stop).
@@ -297,15 +291,6 @@ export declare class CaosClient {
         cause?: string;
     }): Promise<any>;
     getGovernedClaim(claimId: string): Promise<any>;
-    /**
-     * @deprecated Use uploadSource() which starts SourceAdmissionWorkflow.
-     * Legacy single-file upload via /api/v1/sources/upload.
-     */
-    uploadSourceV1(input: FormData | {
-        filename: string;
-        bytes_base64: string;
-        media_type?: string;
-    }): Promise<any>;
     /** Replace session token on an existing client (browser cookie refresh). */
     withSession(sessionToken: string | undefined): CaosClient;
     getRuntimeIdentity(): Promise<RuntimeIdentity>;
