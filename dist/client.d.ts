@@ -90,6 +90,12 @@ export declare class CaosClient {
         human_required?: string;
         limit?: number;
     }): Promise<any>;
+    /** Retry an open operational failure (e.g. a failed admission). */
+    retryControlFailure(failureId: string): Promise<{
+        success: boolean;
+        failure_id: string;
+        new_status: string;
+    }>;
     getControlGovernanceReviews(): Promise<any>;
     recordGovernanceReviewDecision(object_id: string, decision: 'RETAIN' | 'REPLACE' | 'RETIRE', reason: string): Promise<any>;
     syncSourceLibrary(reason: string, dry_run?: boolean): Promise<any>;
@@ -112,7 +118,9 @@ export declare class CaosClient {
         engine?: string;
     }): Promise<any>;
     getControlAi(view?: string, providerId?: string): Promise<any>;
-    updateControlAi(body: any): Promise<any>;
+    updateControlAiKeys(provider_id: string, keys: string[]): Promise<any>;
+    updateControlAiModel(provider_id: string, model: string): Promise<any>;
+    listControlAiModels(): Promise<any>;
     getOpsCommandCatalogue(): Promise<any>;
     issueOpsCommand(body: {
         kind: string;
@@ -141,6 +149,25 @@ export declare class CaosClient {
         workflow_id: string;
         mode: string;
         duplicate: boolean;
+        /**
+         * Why the upload was answered `duplicate`. Absent when it was not.
+         *
+         * `IN_CORPUS`  — the library registry holds this artefact.
+         * `IN_FLIGHT`  — an admission of these exact bytes is running now.
+         *
+         * A caller that renders `duplicate` alone will tell the operator the corpus
+         * already holds their document, which is untrue for IN_FLIGHT and was
+         * untrue for every quarantined document before the gateway started
+         * distinguishing them.
+         */
+        duplicate_reason?: 'IN_CORPUS' | 'IN_FLIGHT';
+        /** The corpus row this collides with, when `duplicate_reason` is IN_CORPUS. */
+        duplicate_of?: string;
+        /**
+         * The bytes had been through admission before and the corpus did not keep
+         * them, so admission ran again. Not an error; worth showing.
+         */
+        readmitted?: boolean;
         admission_decision: string;
         auto_extract: boolean;
         status_href: string;

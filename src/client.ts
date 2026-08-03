@@ -251,6 +251,12 @@ export class CaosClient {
     return res.data;
   }
 
+  /** Retry an open operational failure (e.g. a failed admission). */
+  async retryControlFailure(failureId: string): Promise<{ success: boolean; failure_id: string; new_status: string }> {
+    const res = await this.http.post<any>(`/api/ops/control/failures/${encodeURIComponent(failureId)}/retry`);
+    return res.data;
+  }
+
   async getControlGovernanceReviews(): Promise<any> {
     const res = await this.http.get<any>('/api/ops/control/governance-reviews');
     return res.data;
@@ -305,8 +311,18 @@ export class CaosClient {
     return res.data;
   }
 
-  async updateControlAi(body: any): Promise<any> {
-    const res = await this.http.patch<any>('/api/ops/control/ai', body);
+  async updateControlAiKeys(provider_id: string, keys: string[]): Promise<any> {
+    const res = await this.http.put<any>('/api/ops/control/ai/keys', { provider_id, keys });
+    return res.data;
+  }
+
+  async updateControlAiModel(provider_id: string, model: string): Promise<any> {
+    const res = await this.http.put<any>('/api/ops/control/ai/model', { provider_id, model });
+    return res.data;
+  }
+
+  async listControlAiModels(): Promise<any> {
+    const res = await this.http.get<any>('/api/ops/control/ai/models');
     return res.data;
   }
 
@@ -361,6 +377,25 @@ export class CaosClient {
     workflow_id: string;
     mode: string;
     duplicate: boolean;
+    /**
+     * Why the upload was answered `duplicate`. Absent when it was not.
+     *
+     * `IN_CORPUS`  — the library registry holds this artefact.
+     * `IN_FLIGHT`  — an admission of these exact bytes is running now.
+     *
+     * A caller that renders `duplicate` alone will tell the operator the corpus
+     * already holds their document, which is untrue for IN_FLIGHT and was
+     * untrue for every quarantined document before the gateway started
+     * distinguishing them.
+     */
+    duplicate_reason?: 'IN_CORPUS' | 'IN_FLIGHT';
+    /** The corpus row this collides with, when `duplicate_reason` is IN_CORPUS. */
+    duplicate_of?: string;
+    /**
+     * The bytes had been through admission before and the corpus did not keep
+     * them, so admission ran again. Not an error; worth showing.
+     */
+    readmitted?: boolean;
     admission_decision: string;
     auto_extract: boolean;
     status_href: string;

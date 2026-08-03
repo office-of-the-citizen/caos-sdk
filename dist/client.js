@@ -180,6 +180,11 @@ export class CaosClient {
         const res = await this.http.get('/api/ops/control/failures', { params: options });
         return res.data;
     }
+    /** Retry an open operational failure (e.g. a failed admission). */
+    async retryControlFailure(failureId) {
+        const res = await this.http.post(`/api/ops/control/failures/${encodeURIComponent(failureId)}/retry`);
+        return res.data;
+    }
     async getControlGovernanceReviews() {
         const res = await this.http.get('/api/ops/control/governance-reviews');
         return res.data;
@@ -216,8 +221,16 @@ export class CaosClient {
         const res = await this.http.get('/api/ops/control/ai', { params: { view, provider_id: providerId } });
         return res.data;
     }
-    async updateControlAi(body) {
-        const res = await this.http.patch('/api/ops/control/ai', body);
+    async updateControlAiKeys(provider_id, keys) {
+        const res = await this.http.put('/api/ops/control/ai/keys', { provider_id, keys });
+        return res.data;
+    }
+    async updateControlAiModel(provider_id, model) {
+        const res = await this.http.put('/api/ops/control/ai/model', { provider_id, model });
+        return res.data;
+    }
+    async listControlAiModels() {
+        const res = await this.http.get('/api/ops/control/ai/models');
         return res.data;
     }
     // 5. Operational commands
