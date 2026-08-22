@@ -41,15 +41,12 @@ export function getPermanentSnapshot(): PermanentSnapshot | null {
 export function getPermanentSnapshotMeta(): PermanentSnapshotMeta | null {
   if (!_snapshot) return null;
   return {
-    epoch_id: (_snapshot as any).epoch_id ?? "unknown",
-    snapshot_epoch: (_snapshot as any).epoch_id ?? "unknown",
-    generated_at: (_snapshot as any).built_at ?? new Date().toISOString(),
-    generated_from_commit: null,
-    content_hash: (_snapshot as any).content_hash ?? null,
-    counts: { total_objects: _snapshot.objects?.length ?? 0 },
-    built_at: (_snapshot as any).built_at ?? null,
-    object_count: _snapshot.objects?.length ?? 0,
-  } as unknown as PermanentSnapshotMeta;
+    snapshot_epoch: _snapshot.snapshot_epoch,
+    generated_at: _snapshot.generated_at,
+    generated_from_commit: _snapshot.generated_from_commit,
+    content_hash: _snapshot.content_hash,
+    counts: _snapshot.counts,
+  };
 }
 
 export function getByCanonicalId(canonicalId: string): PermanentSpatialObject | null {
