@@ -1,6 +1,6 @@
 {
   "name": "@office-of-the-citizen/caos-sdk",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Official SDK for communicating with the Constitutional Artificial Operating System (CAOS) — transport contracts and permanent snapshot distribution",
   "type": "module",
   "main": "dist/index.js",
