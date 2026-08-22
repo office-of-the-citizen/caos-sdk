@@ -1,6 +1,6 @@
 {
   "name": "@office-of-the-citizen/caos-sdk",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Official SDK for communicating with the Constitutional Artificial Operating System (CAOS) — transport contracts and permanent snapshot distribution",
   "type": "module",
   "main": "dist/index.js",
@@ -36,13 +36,15 @@
     "pretypecheck": "npm run generate",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "axios": "^1.7.2",
     "zod": "3.23.3"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"
   },

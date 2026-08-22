@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { CaosError, DecisionItem, AdmissionDecisionOutcome, ResolvedElement, AnswerEnvelope } from './types.js';
 import { PublicRecord, NavigationIndex, SearchResponse } from './contracts.js';
+import type { ExtractionEvidenceResponse } from './participation/types.js';
 import { ParticipationClient } from './participation/client.js';
 import {
   CAOS_SDK_VERSION,
@@ -453,6 +454,22 @@ export class CaosClient {
     execution: { status: string; run_id: string } | null;
   }> {
     const res = await this.http.get<any>(`/api/v2/sources/admissions/${encodeURIComponent(workflowId)}`);
+    return res.data;
+  }
+
+  /**
+   * "What happened to this uploaded file?"
+   *
+   * The admission workflow status stops at the handoff to knowledge extraction
+   * and carries no Knowledge Unit counts, so it cannot answer whether a document
+   * actually produced knowledge. This reads the durable chain of evidence —
+   * admission record, extraction report, and a read-back of the KU store — and
+   * names where the pipeline stopped when it did.
+   */
+  async getExtractionEvidence(artifactHash: string): Promise<ExtractionEvidenceResponse> {
+    const res = await this.http.get<ExtractionEvidenceResponse>(
+      `/api/ops/control/ki/evidence/${encodeURIComponent(artifactHash)}`
+    );
     return res.data;
   }
 

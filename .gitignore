@@ -4,3 +4,4 @@ node_modules
 *.tgz
 # Generated runtime identity — recreate with `npm run generate`
 src/generated/runtime-identity.ts
+dist/

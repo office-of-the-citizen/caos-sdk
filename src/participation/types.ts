@@ -231,6 +231,56 @@ export interface KiResponse {
   checked_at: string;
 }
 
+// ── Extraction evidence ───────────────────────────────────────────────────
+
+/**
+ * Where knowledge extraction stopped for one uploaded document.
+ *
+ * Mirrors Engine 07's `ExtractionEvidenceStatus`. `EXTRACTED` is the only
+ * status that means Knowledge Units exist and are readable.
+ */
+export type ExtractionEvidenceStatus =
+  | 'UNKNOWN_ARTEFACT'
+  | 'NOT_ATTEMPTED'
+  | 'EXTRACTED'
+  | 'PERSISTENCE_MISMATCH'
+  | 'EMPTY'
+  | 'FAILED';
+
+export interface ExtractionAttempt {
+  report_id: string;
+  attempted_at: string;
+  report_status: string;
+  model_id: string;
+  extractor_version: string;
+  chunks_planned: number;
+  chunks_extracted: number;
+  chunks_failed: number;
+  chunks_empty: number;
+  chunks_skipped: number;
+  candidates: number;
+  admitted: number;
+  rejected: number;
+  warnings: string[];
+}
+
+export interface ExtractionEvidenceResponse {
+  artifact_hash: string;
+  canonical_id: string | null;
+  original_filename: string | null;
+  admitted_at: string | null;
+  admission_status: string | null;
+  extraction_policy: string | null;
+  status: ExtractionEvidenceStatus;
+  /** Always populated — a sentence naming what happened, successes included. */
+  reason: string;
+  attempt: ExtractionAttempt | null;
+  /** Null means the read failed. Never conflated with zero. */
+  knowledge_units_persisted: number | null;
+  readback_error: string | null;
+  checked_at: string;
+}
+
 // ── Admission types ───────────────────────────────────────────────────────
 
 export type WorkflowStageId =

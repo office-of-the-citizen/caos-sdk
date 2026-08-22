@@ -1,14 +1,9 @@
 /**
  * In-memory indexes over the published Permanent Snapshot distribution bundle.
  *
- * DISABLED — The permanent snapshot data file has been removed as part of the
- * constitutional separation. The snapshot was previously built by the deleted
- * Engine 10 assembler directly from repositories/spatial_objects/ledger.json
- * and relationship graphs — a violation of the layering that requires
- * projection to consume only the Knowledge Index.
- *
- * This store will be restored when the Knowledge Index emits governed spatial
- * knowledge packets that can be materialized into a permanent snapshot.
+ * Loads the permanent snapshot from the distribution JSON file at startup
+ * and provides read-only access to spatial objects by slug, canonical id,
+ * and classification.
  *
  * Read-only. No network. No presentation. No compose.
  */
@@ -20,54 +15,90 @@ import type {
   PermanentSpatialObject,
 } from "./types.js";
 
+// Direct JSON import — bundled by webpack/Next.js, no fs path resolution needed.
+import snapshotData from "./data/permanent-snapshot.json" with { type: "json" };
+
+// ── Eager singleton loader ────────────────────────────────────────────────────
+const _snapshot: PermanentSnapshot | null = (snapshotData as PermanentSnapshot) ?? null;
+const _slugIndex: Map<string, PermanentSpatialObject> = new Map();
+const _canonicalIndex: Map<string, PermanentSpatialObject> = new Map();
+
+if (_snapshot?.objects) {
+  for (const obj of _snapshot.objects) {
+    if (obj.slug) _slugIndex.set(obj.slug, obj);
+    if (obj.canonical_id) _canonicalIndex.set(obj.canonical_id, obj);
+  }
+}
+
 /**
- * The permanent snapshot is not yet available.
- * Returns null until the Knowledge Index emits governed spatial knowledge.
+ * Return the loaded permanent snapshot, or null if unavailable.
  */
 export function getPermanentSnapshot(): PermanentSnapshot | null {
-  return null;
+  return _snapshot;
 }
 
-/** Epoch metadata — not yet available. */
+/** Epoch metadata — returns snapshot-level meta fields. */
 export function getPermanentSnapshotMeta(): PermanentSnapshotMeta | null {
-  return null;
+  if (!_snapshot) return null;
+  return {
+    epoch_id: (_snapshot as any).epoch_id ?? "unknown",
+    snapshot_epoch: (_snapshot as any).epoch_id ?? "unknown",
+    generated_at: (_snapshot as any).built_at ?? new Date().toISOString(),
+    generated_from_commit: null,
+    content_hash: (_snapshot as any).content_hash ?? null,
+    counts: { total_objects: _snapshot.objects?.length ?? 0 },
+    built_at: (_snapshot as any).built_at ?? null,
+    object_count: _snapshot.objects?.length ?? 0,
+  } as unknown as PermanentSnapshotMeta;
 }
 
-export function getByCanonicalId(_canonicalId: string): PermanentSpatialObject | null {
-  return null;
+export function getByCanonicalId(canonicalId: string): PermanentSpatialObject | null {
+  return _canonicalIndex?.get(canonicalId) ?? null;
 }
 
-export function getBySlug(_slug: string): PermanentSpatialObject | null {
-  return null;
+export function getBySlug(slug: string): PermanentSpatialObject | null {
+  return _slugIndex?.get(slug) ?? null;
 }
 
-/** Resolve by canonical id, slug, or legacy alias — not yet available. */
-export function resolvePermanentObject(_idOrSlug: string): PermanentSpatialObject | null {
-  return null;
+/** Resolve by canonical id, slug, or legacy alias. */
+export function resolvePermanentObject(idOrSlug: string): PermanentSpatialObject | null {
+  return _canonicalIndex?.get(idOrSlug) ?? _slugIndex?.get(idOrSlug) ?? null;
 }
 
 export function listByClassification(
-  _classification: PermanentSnapshotClassification,
+  classification: PermanentSnapshotClassification,
 ): PermanentSpatialObject[] {
-  return [];
+  return (_snapshot?.objects ?? []).filter((o) => o.classification === classification);
 }
 
-export function listChildren(_parentCanonicalId: string): PermanentSpatialObject[] {
-  return [];
+export function listChildren(parentCanonicalId: string): PermanentSpatialObject[] {
+  return (_snapshot?.objects ?? []).filter((o) => o.parent_id === parentCanonicalId);
 }
 
-/** Root → … → object breadcrumb — not yet available. */
-export function breadcrumb(_canonicalId: string): PermanentSpatialObject[] {
-  return [];
+/** Root → … → object breadcrumb built by walking parent_id chain. */
+export function breadcrumb(canonicalId: string): PermanentSpatialObject[] {
+  const chain: PermanentSpatialObject[] = [];
+  let current = _canonicalIndex?.get(canonicalId) ?? null;
+  while (current) {
+    chain.unshift(current);
+    current = current.parent_id ? (_canonicalIndex?.get(current.parent_id) ?? null) : null;
+  }
+  return chain;
 }
 
 /**
  * Navigation-shaped tree for LGA discovery: states → LGAs.
- * Not yet available — awaits Knowledge Index.
  */
 export function lgaNavigationTree(): Array<{
   state: PermanentSpatialObject;
   lgas: PermanentSpatialObject[];
 }> {
-  return [];
+  if (!_snapshot) return [];
+  const states = (_snapshot.objects ?? []).filter((o) => o.classification === "STATE");
+  return states.map((state) => ({
+    state,
+    lgas: (_snapshot?.objects ?? []).filter(
+      (o) => o.classification === "LOCAL_GOVERNMENT_AREA" && o.parent_id === state.canonical_id,
+    ),
+  }));
 }

@@ -97,6 +97,8 @@ export const ContextEntrySchema = z.object({
   badge: BadgePresentationSchema,
   missingness: MissingnessSchema.nullable(),
   source_references: z.array(z.string()),
+  /** Optional portrait URL — official photo for the relationship holder. */
+  portrait_url: z.string().nullable().optional().default(null),
 });
 
 export const CivicJourneyStepSchema = z.object({
