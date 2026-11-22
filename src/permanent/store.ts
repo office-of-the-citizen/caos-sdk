@@ -19,7 +19,14 @@ import type {
 import snapshotData from "./data/permanent-snapshot.json" with { type: "json" };
 
 // ── Eager singleton loader ────────────────────────────────────────────────────
-const _snapshot: PermanentSnapshot | null = (snapshotData as PermanentSnapshot) ?? null;
+function freezePublished<T>(value: T): T {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) freezePublished(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+const _snapshot: PermanentSnapshot | null = freezePublished(snapshotData as PermanentSnapshot) ?? null;
 const _slugIndex: Map<string, PermanentSpatialObject> = new Map();
 const _canonicalIndex: Map<string, PermanentSpatialObject> = new Map();
 
